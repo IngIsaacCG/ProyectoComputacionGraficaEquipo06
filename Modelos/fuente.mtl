@@ -1,0 +1,24 @@
+# Blender 5.2.2 LTS MTL File: 'isla.blend'
+# www.blender.org
+
+newmtl blinn2
+Ns 63.117920
+Ka 0.500000 0.500000 0.500000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+map_Kd -o 0.35298422 -0.1916548 0 C:/seawaterfull2.jpg
+map_Bump -o 0.35298422 -0.1916548 0 -bm 0.020000 C:/seawaterfull2.jpg
+
+newmtl lambert6
+Ns 200.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd -o 0.70596844 -0.3833096 0 -s 0.5 0.5 1 C:/germany010grey.jpg
+map_Bump -o 0.70596844 -0.3833096 0 -s 0.5 0.5 1 -bm 0.050000 C:/germany010b.jpg
