@@ -12,7 +12,7 @@
 #include <GLFW/glfw3.h>
 
 // Other Libs
-#include "stb_image.h"
+#include "Graphics/stb_image.h"
 
 // GLM Mathematics
 #include <glm/glm.hpp>
@@ -24,9 +24,9 @@
 
 
 // Other includes
-#include "Shader.h"
-#include "Camera.h"
-#include "Model.h"
+#include "Graphics/Shader.h"
+#include "Core/Camera.h"
+#include "Graphics/Model.h"
 
 // Function prototypes
 void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode);

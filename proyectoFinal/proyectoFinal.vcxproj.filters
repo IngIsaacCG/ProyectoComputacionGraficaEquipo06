@@ -18,50 +18,44 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Maquina de estados.cpp">
+    <ClCompile Include="src\main.cpp">
       <Filter>Archivos de origen</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shader\core.frag">
+    <None Include="assets\shader\lamp.frag">
       <Filter>Archivos de origen\Shaders</Filter>
     </None>
-    <None Include="Shader\core.vs">
+    <None Include="assets\shader\lamp.vs">
       <Filter>Archivos de origen\Shaders</Filter>
     </None>
-    <None Include="Shader\lamp.frag">
+    <None Include="assets\shader\lighting.frag">
       <Filter>Archivos de origen\Shaders</Filter>
     </None>
-    <None Include="Shader\lamp.vs">
+    <None Include="assets\shader\lighting.vs">
       <Filter>Archivos de origen\Shaders</Filter>
     </None>
-    <None Include="Shader\lighting.frag">
+    <None Include="assets\shader\modelLoading.frag">
       <Filter>Archivos de origen\Shaders</Filter>
     </None>
-    <None Include="Shader\lighting.vs">
-      <Filter>Archivos de origen\Shaders</Filter>
-    </None>
-    <None Include="Shader\modelLoading.frag">
-      <Filter>Archivos de origen\Shaders</Filter>
-    </None>
-    <None Include="Shader\modelLoading.vs">
+    <None Include="assets\shader\modelLoading.vs">
       <Filter>Archivos de origen\Shaders</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Camera.h">
+    <ClInclude Include="include\Core\Camera.h">
       <Filter>Archivos de encabezado</Filter>
     </ClInclude>
-    <ClInclude Include="Shader.h">
+    <ClInclude Include="include\Graphics\Shader.h">
       <Filter>Archivos de encabezado</Filter>
     </ClInclude>
-    <ClInclude Include="stb_image.h">
+    <ClInclude Include="include\Graphics\Mesh.h">
       <Filter>Archivos de encabezado</Filter>
     </ClInclude>
-    <ClInclude Include="Model.h">
+    <ClInclude Include="include\Graphics\Model.h">
       <Filter>Archivos de encabezado</Filter>
     </ClInclude>
-    <ClInclude Include="Mesh.h">
+    <ClInclude Include="include\Graphics\stb_image.h">
       <Filter>Archivos de encabezado</Filter>
     </ClInclude>
   </ItemGroup>
