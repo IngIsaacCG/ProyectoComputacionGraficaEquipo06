@@ -101,6 +101,7 @@ StyleCopReport.xml
 *.ilk
 *.meta
 *.obj
+!proyectoFinal/assets/modelos/*.obj
 *.idb
 *.iobj
 *.pch
