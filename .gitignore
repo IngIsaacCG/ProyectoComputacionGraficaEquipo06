@@ -427,3 +427,9 @@ FodyWeavers.xsd
 
 # Official VS Code C# Dev Kit Extension exclusion
 #*.lscache
+
+# Conservar GLEW necesario para compilar el proyecto
+!proyectoFinal/dependencias/GLEW/lib/
+!proyectoFinal/dependencias/GLEW/lib/Release/
+!proyectoFinal/dependencias/GLEW/lib/Release/Win32/
+!proyectoFinal/dependencias/GLEW/lib/Release/Win32/glew32.lib
