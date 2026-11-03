@@ -94,6 +94,8 @@ private:
 		vector<Vertex> vertices;
 		vector<GLuint> indices;
 		vector<Texture> textures;
+		glm::vec3 diffuseColor(1.0f, 1.0f, 1.0f);
+		bool hasDiffuseTexture = false;
 
 		// Walk through each of the mesh's vertices
 		for (GLuint i = 0; i < mesh->mNumVertices; i++)
@@ -146,6 +148,12 @@ private:
 		if (mesh->mMaterialIndex >= 0)
 		{
 			aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+			aiColor3D color(1.0f, 1.0f, 1.0f);
+
+			if (material->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS)
+			{
+				diffuseColor = glm::vec3(color.r, color.g, color.b);
+			}
 			// We assume a convention for sampler names in the shaders. Each diffuse texture should be named
 			// as 'texture_diffuseN' where N is a sequential number ranging from 1 to MAX_SAMPLER_NUMBER.
 			// Same applies to other texture as the following list summarizes:
@@ -157,13 +165,21 @@ private:
 			vector<Texture> diffuseMaps = this->loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
 			textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 
+			hasDiffuseTexture = !diffuseMaps.empty();
+
 			// 2. Specular maps
 			vector<Texture> specularMaps = this->loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
 			textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 		}
 
 		// Return a mesh object created from the extracted mesh data
-		return Mesh(vertices, indices, textures);
+		return Mesh(
+			vertices,
+			indices,
+			textures,
+			diffuseColor,
+			hasDiffuseTexture
+		);
 	}
 
 	// Checks all material textures of a given type and loads the textures if they're not loaded yet.

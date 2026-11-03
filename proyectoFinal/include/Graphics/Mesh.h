@@ -44,15 +44,20 @@ public:
 	vector<GLuint> indices;
 	vector<Texture> textures;
 
+	glm::vec3 diffuseColor;
+	bool hasDiffuseTexture;
+
 	/*  Functions  */
 	// Constructor
-	Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures)
+	Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures,
+		glm::vec3 diffuseColor, bool hasDiffuseTexture)
 	{
 		this->vertices = vertices;
 		this->indices = indices;
 		this->textures = textures;
+		this->diffuseColor = diffuseColor;
+		this->hasDiffuseTexture = hasDiffuseTexture;
 
-		// Now that we have all the required data, set the vertex buffers and its attribute pointers.
 		this->setupMesh();
 	}
 
@@ -89,6 +94,18 @@ public:
 
 		// Also set each mesh's shininess property to a default value (if you want you could extend this to another mesh property and possibly change this value)
 		glUniform1f(glGetUniformLocation(shader.Program, "material.shininess"), 16.0f);
+
+		glUniform3f(
+			glGetUniformLocation(shader.Program, "materialColor"),
+			diffuseColor.r,
+			diffuseColor.g,
+			diffuseColor.b
+		);
+
+		glUniform1i(
+			glGetUniformLocation(shader.Program, "hasDiffuseTexture"),
+			hasDiffuseTexture ? 1 : 0
+		);
 
 		// Draw mesh
 		glBindVertexArray(this->VAO);

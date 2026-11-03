@@ -176,8 +176,17 @@ int main()
 	
 	//models
 	Model Isla((char*)"assets/modelos/Isla.obj");
-
-
+	Model Casas((char*)"assets/modelos/casas.obj");
+	Model Cementerio((char*)"assets/modelos/cementerio.obj");
+	Model Panteon((char*)"assets/modelos/panteonM.obj");
+	Model EntradaPanteon((char*)"assets/modelos/EntradaPanteon.obj");
+	Model Iglesia((char*)"assets/modelos/iglesia.obj");
+	Model Muelles((char*)"assets/modelos/muelles.obj");
+	Model SK((char*)"assets/modelos/SK.obj");
+	Model Boat((char*)"assets/modelos/boat.obj");
+	Model Velas((char*)"assets/modelos/velas.obj");
+	Model Fuente((char*)"assets/modelos/fuente.obj");
+	Model Pasto((char*)"assets/modelos/pasto.obj");
 
 	// First, set the container's VAO (and VBO)
 	GLuint VBO, VAO;
@@ -295,6 +304,63 @@ int main()
 		model = glm::mat4(1.0f);
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		Isla.Draw(lightingShader);
+
+		// Dibujar casas
+		model = glm::mat4(1.0f);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Casas.Draw(lightingShader);
+
+		// Dibujar cementerio
+		model = glm::mat4(1.0f);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Cementerio.Draw(lightingShader);
+
+		// Dibujar Panteon
+		model = glm::mat4(1.0f);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Panteon.Draw(lightingShader);
+
+		// Dibujar entrada del panteón
+		model = glm::mat4(1.0f);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		EntradaPanteon.Draw(lightingShader);
+
+		// Dibujar iglesia
+		model = glm::mat4(1.0f);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Iglesia.Draw(lightingShader);
+
+		// Dibujar muelles
+		model = glm::mat4(1.0f);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Muelles.Draw(lightingShader);
+
+		// Dibujar SK
+		model = glm::mat4(1.0f);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		SK.Draw(lightingShader);
+
+		// Dibujar bote
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(12.0f, 0.5f, -2.0f));
+		model = glm::scale(model, glm::vec3(0.25f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Boat.Draw(lightingShader);
+
+		// Dibujar velas
+		model = glm::mat4(1.0f);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Velas.Draw(lightingShader);
+
+		// Dibujar fuente
+		model = glm::mat4(1.0f);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Fuente.Draw(lightingShader);
+
+		// Dibujar pasto
+		model = glm::mat4(1.0f);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Pasto.Draw(lightingShader);
 
 		// Also draw the lamp object, again binding the appropriate shader
 		lampShader.Use();
