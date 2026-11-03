@@ -104,19 +104,9 @@ float vertices[] = {
 
 glm::vec3 Light1 = glm::vec3(0);
 //Anim
-float rotBall = 0.0f;
-bool AnimBall = false;
-bool AnimDog = false;
-float rotDog = 0.0f;
-int dogAnim = 0;
-float FLegs = 0.0f;
-float RLegs = 0.0f;
-float head = 0.0f;
-float tail = 0.0f;
-glm::vec3 dogPos (0.0f,0.0f,0.0f);
-float dogRot = 0.0f;
-bool step = false;
-float rotStep = 1.0f;
+// Variables para el Pez
+float rotacionPeces = 0.0f;
+
 
 
 
@@ -136,7 +126,7 @@ int main()
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);*/
 
 	// Create a GLFWwindow object that we can use for GLFW's functions
-	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Animacion maquina de estados (Isaac Chavez Garcia)", nullptr, nullptr);
+	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Proyecto final", nullptr, nullptr);
 
 	if (nullptr == window)
 	{
@@ -187,6 +177,7 @@ int main()
 	Model Velas((char*)"assets/modelos/velas.obj");
 	Model Fuente((char*)"assets/modelos/fuente.obj");
 	Model Pasto((char*)"assets/modelos/pasto.obj");
+	Model Peces((char*)"assets/modelos/peces.obj");
 
 	// First, set the container's VAO (and VBO)
 	GLuint VBO, VAO;
@@ -362,6 +353,13 @@ int main()
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		Pasto.Draw(lightingShader);
 
+		// Dibujo pez
+		model = glm::mat4(1.0f);
+		// 2. Aplica la rotación continua en el eje X (1.0f, 0.0f, 0.0f)
+		model = glm::rotate(model, glm::radians(rotacionPeces), glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Peces.Draw(lightingShader);
+
 		// Also draw the lamp object, again binding the appropriate shader
 		lampShader.Use();
 		// Get location objects for the matrices on the lamp shader (these could be different on a different shader)
@@ -496,76 +494,18 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode
 			Light1 = glm::vec3(0);//Cuado es solo un valor en los 3 vectores pueden dejar solo una componente
 		}
 	}
-	if (keys[GLFW_KEY_N])
-	{
-		AnimBall = !AnimBall;
-		
-	}
-	if (keys[GLFW_KEY_B])
-	{
-		dogAnim = 1;
-
-	}
 	
 }
 void Animation() {
-	if (AnimBall)
-	{
-		rotBall += 0.4f;
-		//printf("%f", rotBall);
+	// --- ANIMACIÓN DE PECES (Solo rotación) ---
+	float velocidadGiro = 90.0f; // Los peces girarán 90 grados por segundo
+
+	rotacionPeces += velocidadGiro * deltaTime;
+
+	// Evitar que el número crezca al infinito
+	if (rotacionPeces >= 360.0f) {
+		rotacionPeces -= 360.0f;
 	}
-	
-	if (AnimDog)
-	{
-		rotDog -= 0.6f;
-		//printf("%f", rotBall);
-	}
-	if (dogAnim == 1)//Walk animation
-	{
-		if(!step) //State 1
-		{ 
-			RLegs += 0.3f;
-			FLegs += 0.3f;
-			head += 0.3f;
-			tail += 0.3f;
-			if(RLegs >= 15.0f) //Condition
-			{
-				step = true;
-			}
-		}
-		else 
-		{
-			RLegs -= 0.3f;
-			FLegs -= 0.3f;
-			head -= 0.3f;
-			tail -= 0.3f;
-			if(RLegs <= -15.0f) //Condition
-			{
-				step = false;
-			}
-		}
-		if (dogPos.z >= 1.5f && dogPos.z < 2.0f)
-		{
-			if (rotStep == 1) 
-			{
-				dogRot += 0.2f;
-				if (dogRot >= 90.0f)
-				{
-					rotStep = 0;
-				}
-				dogPos.x += 0.005f;
-			}
-		}
-		if (dogPos.z >= 2.0f)
-		{	
-			dogPos.z -= 0.001f;
-			//dogAnim = 0;
-		}
-		dogPos.z += 0.001f;
-		//dogPos.x += 0.001f;
-		printf("\n%f", dogRot);
-	}
-	
 }
 
 void MouseCallback(GLFWwindow *window, double xPos, double yPos)
