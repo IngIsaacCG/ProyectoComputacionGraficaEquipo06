@@ -106,7 +106,10 @@ glm::vec3 Light1 = glm::vec3(0);
 //Anim
 // Variables para el Pez
 float rotacionPeces = 0.0f;
-
+// Animacion de la barca principal
+float boatT = 0.0f;
+bool boatMoving = false;
+float bgBoat1Angle = 0.0f;
 
 
 
@@ -217,19 +220,19 @@ int main()
 		// Clear the colorbuffer
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	   
+
 		// OpenGL options
 		glEnable(GL_DEPTH_TEST);
 
-		
+
 		glm::mat4 modelTemp = glm::mat4(1.0f); //Temp
-		
-	
+
+
 
 		// Use cooresponding shader when setting uniforms/drawing objects
 		lightingShader.Use();
 
-        glUniform1i(glGetUniformLocation(lightingShader.Program, "diffuse"), 0);
+		glUniform1i(glGetUniformLocation(lightingShader.Program, "diffuse"), 0);
 		//glUniform1i(glGetUniformLocation(lightingShader.Program, "specular"),1);
 
 		GLint viewPosLoc = glGetUniformLocation(lightingShader.Program, "viewPos");
@@ -238,25 +241,25 @@ int main()
 
 		// Directional light
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.direction"), -0.2f, -1.0f, -0.3f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.ambient"),0.6f,0.6f,0.6f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.ambient"), 0.6f, 0.6f, 0.6f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.diffuse"), 0.6f, 0.6f, 0.6f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.specular"),0.3f, 0.3f, 0.3f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.specular"), 0.3f, 0.3f, 0.3f);
 
 
 		// Point light 1
-	    glm::vec3 lightColor;
-		lightColor.x= abs(sin(glfwGetTime() *Light1.x));
-		lightColor.y= abs(sin(glfwGetTime() *Light1.y));
-		lightColor.z= sin(glfwGetTime() *Light1.z);
+		glm::vec3 lightColor;
+		lightColor.x = abs(sin(glfwGetTime() * Light1.x));
+		lightColor.y = abs(sin(glfwGetTime() * Light1.y));
+		lightColor.z = sin(glfwGetTime() * Light1.z);
 
-		
+
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].position"), pointLightPositions[0].x, pointLightPositions[0].y, pointLightPositions[0].z);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].ambient"), lightColor.x,lightColor.y, lightColor.z);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].diffuse"), lightColor.x,lightColor.y,lightColor.z);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].ambient"), lightColor.x, lightColor.y, lightColor.z);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].diffuse"), lightColor.x, lightColor.y, lightColor.z);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].specular"), 1.0f, 0.2f, 0.2f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[0].constant"), 1.0f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[0].linear"), 0.045f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[0].quadratic"),0.075f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[0].quadratic"), 0.075f);
 
 
 		// SpotLight
@@ -270,7 +273,7 @@ int main()
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.quadratic"), 0.7f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.cutOff"), glm::cos(glm::radians(12.0f)));
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.outerCutOff"), glm::cos(glm::radians(18.0f)));
-		
+
 
 		// Set material properties
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "material.shininess"), 5.0f);
@@ -331,11 +334,79 @@ int main()
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		SK.Draw(lightingShader);
 
-		// Dibujar bote
+		// ------------------------------
+		// Barca principal
+		// ------------------------------
+
+		glm::vec3 boatStart(19.0f, 0.5f, -3.8f);
+		glm::vec3 boatEnd(9.5f, 0.5f, -1.9f);
+
+		// Movimiento principal entre ambos muelles
+		glm::vec3 boatPosition = glm::mix(boatStart, boatEnd, boatT);
+
+		// Direccion general del recorrido
+		glm::vec3 boatDirection = glm::normalize(boatEnd - boatStart);
+
+		// Direccion perpendicular para mover la barca
+		// ligeramente hacia los lados
+		glm::vec3 boatSide(-boatDirection.z, 0.0f, boatDirection.x);
+
+		// Movimiento lateral.
+		// Al inicio y al final queda exactamente
+		// sobre la trayectoria principal.
+		float boatSideMovement = sin(boatT * glm::pi<float>() * 4.0f) * 0.30f;
+		boatPosition += boatSide * boatSideMovement;
+
+
+		// Pequeño cambio de direccion mientras navega
+		float boatRotation = 225.0f + sin(boatT * glm::pi<float>() * 4.0f) * 4.0f;
+
+		// Transformaciones
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(12.0f, 0.5f, -2.0f));
+		model = glm::translate(model, boatPosition);
+		model = glm::rotate(model, glm::radians(boatRotation), glm::vec3(0.0f, 1.0f, 0.0f));
 		model = glm::scale(model, glm::vec3(0.25f));
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Boat.Draw(lightingShader);
+
+		// ------------------------------
+		// Barca de fondo 1
+		// ------------------------------
+		float bgAngleRad = glm::radians(-bgBoat1Angle);
+
+		// Centro del recorrido
+		float bgCenterX = 0.0f;
+		float bgCenterZ = 0.0f;
+
+		// Recorrido amplio alrededor de la isla
+		float bgRadiusX = 18.0f;
+		float bgRadiusZ = 12.0f;
+
+		// Posicion de la barca
+		float bgX = bgCenterX + cos(bgAngleRad) * bgRadiusX;
+		float bgZ = bgCenterZ + sin(bgAngleRad) * bgRadiusZ;
+
+		// Direccion real de movimiento
+		float dirX = -sin(bgAngleRad) * bgRadiusX;
+		float dirZ = cos(bgAngleRad) * bgRadiusZ;
+
+		// Angulo de direccion
+		float directionAngle = glm::degrees(atan2(dirX, dirZ));
+
+		// Correccion de orientacion del modelo
+		float modelOffset = -56.3f;
+		float bgRotation = directionAngle + modelOffset + 180.0f;
+
+		// Movimiento suave por el agua
+		float balanceo =
+			sin(bgBoat1Angle * 0.12f) * 2.0f;
+
+		// Dibujar barca
+		model = glm::mat4(1.0f);
+		model = glm::translate(model,glm::vec3(bgX, 0.5f, bgZ));
+		model = glm::rotate(model,glm::radians(bgRotation),glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::scale(model,glm::vec3(0.25f));
+		glUniformMatrix4fv(modelLoc,1,GL_FALSE,glm::value_ptr(model));
 		Boat.Draw(lightingShader);
 
 		// Dibujar velas
@@ -481,6 +552,24 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode
 		}
 	}
 
+	// Iniciar recorrido de la barca con M
+	if (key == GLFW_KEY_M && action == GLFW_PRESS)
+	{
+		if (!boatMoving)
+		{
+			boatT = 0.0f;
+			boatMoving = true;
+		}// Iniciar recorrido de la barca con M
+		if (key == GLFW_KEY_M && action == GLFW_PRESS)
+		{
+			if (!boatMoving)
+			{
+				boatT = 0.0f;
+				boatMoving = true;
+			}
+		}
+	}
+
 	if (keys[GLFW_KEY_SPACE])
 	{
 		active = !active;
@@ -505,6 +594,26 @@ void Animation() {
 	// Evitar que el número crezca al infinito
 	if (rotacionPeces >= 360.0f) {
 		rotacionPeces -= 360.0f;
+	}
+
+	// Movimiento de la barca principal
+	if (boatMoving)
+	{
+		boatT += 0.08f * deltaTime;
+
+		if (boatT >= 1.0f)
+		{
+			boatT = 1.0f;
+			boatMoving = false;
+		}
+	}
+
+	// Barca de fondo 1
+	bgBoat1Angle += 12.0f * deltaTime;
+
+	if (bgBoat1Angle >= 360.0f)
+	{
+		bgBoat1Angle -= 360.0f;
 	}
 }
 
