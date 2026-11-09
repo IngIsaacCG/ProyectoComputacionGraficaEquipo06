@@ -39,11 +39,12 @@ const GLuint WIDTH = 800, HEIGHT = 600;
 int SCREEN_WIDTH, SCREEN_HEIGHT;
 
 // Camera
-Camera camera(glm::vec3(0.0f, 5.0f, 20.0f));
+Camera camera(glm::vec3(21.292f, 1.498f, -2.335f));
 GLfloat lastX = WIDTH / 2.0;
 GLfloat lastY = HEIGHT / 2.0;
 bool keys[1024];
 bool firstMouse = true;
+
 // Light attributes
 glm::vec3 lightPos(0.0f, 0.0f, 0.0f);
 bool active;
@@ -170,6 +171,7 @@ int main()
 	//models
 	Model Isla((char*)"assets/modelos/Isla.obj");
 	Model Casas((char*)"assets/modelos/casas.obj");
+	/*Model Camino((char*)"assets/modelos/camino.obj");*/
 	Model Cementerio((char*)"assets/modelos/cementerio.obj");
 	Model Panteon((char*)"assets/modelos/panteonM.obj");
 	Model EntradaPanteon((char*)"assets/modelos/EntradaPanteon.obj");
@@ -181,6 +183,13 @@ int main()
 	Model Fuente((char*)"assets/modelos/fuente.obj");
 	Model Pasto((char*)"assets/modelos/pasto.obj");
 	Model Peces((char*)"assets/modelos/peces.obj");
+	Model Monumento((char*)"assets/modelos/monumento.obj");
+	Model Head((char*)"assets/modelos/head.obj");
+	Model Torso((char*)"assets/modelos/torso.obj");
+	Model LeftArm((char*)"assets/modelos/left_Arm.obj");
+	Model RightArm((char*)"assets/modelos/right_Arm.obj");
+	Model LeftLeg((char*)"assets/modelos/left_Leg.obj");
+	Model RightLeg((char*)"assets/modelos/right_Leg.obj");
 
 	// First, set the container's VAO (and VBO)
 	GLuint VBO, VAO;
@@ -409,10 +418,50 @@ int main()
 		glUniformMatrix4fv(modelLoc,1,GL_FALSE,glm::value_ptr(model));
 		Boat.Draw(lightingShader);
 
+		// Dibujo torso
+		model = glm::mat4(1.0f);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Torso.Draw(lightingShader);
+
+		// Dibujo cabeza
+		model = glm::mat4(1.0f);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Head.Draw(lightingShader);
+
+		// Dibujo brazo izquierdo
+		model = glm::mat4(1.0f);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		LeftArm.Draw(lightingShader);
+
+		// Dibujo brazo derecho
+		model = glm::mat4(1.0f);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		RightArm.Draw(lightingShader);
+
+		// Dibujo pierna izquierda
+		model = glm::mat4(1.0f);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		LeftLeg.Draw(lightingShader);
+
+		// Dibujo pierna derecha
+		model = glm::mat4(1.0f);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		RightLeg.Draw(lightingShader);
+
 		// Dibujar velas
 		model = glm::mat4(1.0f);
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		Velas.Draw(lightingShader);
+
+		// Dibujar monumento
+		model = glm::mat4(1.0f);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Monumento.Draw(lightingShader);
+
+		// Dibujar camino
+		/*model = glm::mat4(1.0f);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Camino.Draw(lightingShader);*/
 
 		// Dibujar fuente
 		model = glm::mat4(1.0f);
