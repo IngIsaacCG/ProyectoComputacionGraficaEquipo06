@@ -1,7 +1,3 @@
-/*
-
-*/
-
 #include <iostream>
 #include <cmath>
 
@@ -22,17 +18,21 @@
 //Load Models
 #include "SOIL2/SOIL2.h"
 
-
 // Other includes
 #include "Graphics/Shader.h"
 #include "Core/Camera.h"
 #include "Graphics/Model.h"
 
 // Function prototypes
-void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode);
-void MouseCallback(GLFWwindow *window, double xPos, double yPos);
+void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode);
+void MouseCallback(GLFWwindow* window, double xPos, double yPos);
 void DoMovement();
 void Animation();
+
+// Funciones Keyframes
+void saveFrame(void);
+void resetElements(void);
+void interpolation(void);
 
 // Window dimensions
 const GLuint WIDTH = 800, HEIGHT = 600;
@@ -48,130 +48,114 @@ bool firstMouse = true;
 // Light attributes
 glm::vec3 lightPos(0.0f, 0.0f, 0.0f);
 bool active;
-
-// Positions of the point lights
 glm::vec3 pointLightPositions[] = {
-	glm::vec3(0.0f,2.0f, 0.0f),
-	glm::vec3(0.0f,0.0f, 0.0f),
-	glm::vec3(0.0f,0.0f,  0.0f),
-	glm::vec3(0.0f,0.0f, 0.0f)
+	glm::vec3(0.0f,2.0f, 0.0f), glm::vec3(0.0f,0.0f, 0.0f), glm::vec3(0.0f,0.0f, 0.0f), glm::vec3(0.0f,0.0f, 0.0f)
 };
 
 float vertices[] = {
-	 -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-	   -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-	   -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-
-	   -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-		0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-		0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-		0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-	   -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-	   -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-
-	   -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-	   -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-	   -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-	   -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-	   -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-	   -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-
-		0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-		0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-		0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-
-	   -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-		0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-		0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-		0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-	   -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-	   -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-
-	   -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-		0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-		0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-		0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-	   -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-	   -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+	 -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	  0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+	  0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+	 -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f, -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+	 -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f, -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	 -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f, -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	 -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f, -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+	  0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	  0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	  0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+	 -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+	  0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	 -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+	 -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f, 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+	  0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f, 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	 -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f, -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 };
 
-
-
 glm::vec3 Light1 = glm::vec3(0);
-//Anim
-// Variables para el Pez
 float rotacionPeces = 0.0f;
-// Animacion de la barca principal
 float boatT = 0.0f;
 bool boatMoving = false;
 float bgBoat1Angle = 0.0f;
 
+// -----------------------------------------------------
+// --- VARIABLES KEYFRAMES DEL PERSONAJE ---
+// -----------------------------------------------------
+float charPosX = 0.0f, charPosY = 0.0f, charPosZ = 0.0f;
+float charRotY = 0.0f;
 
+float torsoPitch = 0.0f;
+float headRot = 0.0f;
+float leftArmRot = 0.0f, rightArmRot = 0.0f;
+float leftLegRot = 0.0f, rightLegRot = 0.0f;
 
-// Deltatime
-GLfloat deltaTime = 0.0f;	// Time between current frame and last frame
-GLfloat lastFrame = 0.0f;  	// Time of last frame
+typedef struct _frame {
+	float charPosX, charPosY, charPosZ, charRotY;
+	float incX, incY, incZ, charRotYInc;
+
+	float torsoPitch, torsoPitchInc;
+	float headRot, headRotInc;
+	float leftArmRot, leftArmRotInc, rightArmRot, rightArmRotInc;
+	float leftLegRot, leftLegRotInc, rightLegRot, rightLegRotInc;
+} FRAME;
+
+#define MAX_FRAMES 10
+FRAME KeyFrame[MAX_FRAMES];
+int FrameIndex = 0;
+bool play = false;
+int playIndex = 0;
+int i_max_steps = 90;
+int i_curr_steps = 0;
+
+void saveFrame(void) {
+	if (FrameIndex >= MAX_FRAMES) return;
+	KeyFrame[FrameIndex] = { charPosX, charPosY, charPosZ, charRotY, 0,0,0,0, torsoPitch, 0, headRot, 0, leftArmRot, 0, rightArmRot, 0, leftLegRot, 0, rightLegRot, 0 };
+	printf("Frame guardado %d\n", FrameIndex);
+	FrameIndex++;
+}
+
+void resetElements(void) {
+	charPosX = KeyFrame[0].charPosX; charPosY = KeyFrame[0].charPosY; charPosZ = KeyFrame[0].charPosZ;
+	charRotY = KeyFrame[0].charRotY; torsoPitch = KeyFrame[0].torsoPitch; headRot = KeyFrame[0].headRot;
+	leftArmRot = KeyFrame[0].leftArmRot; rightArmRot = KeyFrame[0].rightArmRot;
+	leftLegRot = KeyFrame[0].leftLegRot; rightLegRot = KeyFrame[0].rightLegRot;
+}
+
+void interpolation(void) {
+	KeyFrame[playIndex].incX = (KeyFrame[playIndex + 1].charPosX - KeyFrame[playIndex].charPosX) / i_max_steps;
+	KeyFrame[playIndex].incY = (KeyFrame[playIndex + 1].charPosY - KeyFrame[playIndex].charPosY) / i_max_steps;
+	KeyFrame[playIndex].incZ = (KeyFrame[playIndex + 1].charPosZ - KeyFrame[playIndex].charPosZ) / i_max_steps;
+	KeyFrame[playIndex].charRotYInc = (KeyFrame[playIndex + 1].charRotY - KeyFrame[playIndex].charRotY) / i_max_steps;
+	KeyFrame[playIndex].torsoPitchInc = (KeyFrame[playIndex + 1].torsoPitch - KeyFrame[playIndex].torsoPitch) / i_max_steps;
+	KeyFrame[playIndex].headRotInc = (KeyFrame[playIndex + 1].headRot - KeyFrame[playIndex].headRot) / i_max_steps;
+	KeyFrame[playIndex].leftArmRotInc = (KeyFrame[playIndex + 1].leftArmRot - KeyFrame[playIndex].leftArmRot) / i_max_steps;
+	KeyFrame[playIndex].rightArmRotInc = (KeyFrame[playIndex + 1].rightArmRot - KeyFrame[playIndex].rightArmRot) / i_max_steps;
+	KeyFrame[playIndex].leftLegRotInc = (KeyFrame[playIndex + 1].leftLegRot - KeyFrame[playIndex].leftLegRot) / i_max_steps;
+	KeyFrame[playIndex].rightLegRotInc = (KeyFrame[playIndex + 1].rightLegRot - KeyFrame[playIndex].rightLegRot) / i_max_steps;
+}
+
+GLfloat deltaTime = 0.0f;
+GLfloat lastFrame = 0.0f;
 
 int main()
 {
-	// Init GLFW
 	glfwInit();
-	// Set all the required options for GLFW
-	/*glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);*/
-
-	// Create a GLFWwindow object that we can use for GLFW's functions
 	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Proyecto final", nullptr, nullptr);
-
-	if (nullptr == window)
-	{
-		std::cout << "Failed to create GLFW window" << std::endl;
-		glfwTerminate();
-
-		return EXIT_FAILURE;
-	}
-
+	if (nullptr == window) { glfwTerminate(); return EXIT_FAILURE; }
 	glfwMakeContextCurrent(window);
-
 	glfwGetFramebufferSize(window, &SCREEN_WIDTH, &SCREEN_HEIGHT);
-
-	// Set the required callback functions
 	glfwSetKeyCallback(window, KeyCallback);
 	glfwSetCursorPosCallback(window, MouseCallback);
-
-	// GLFW Options
-	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-	// Set this to true so GLEW knows to use a modern approach to retrieving function pointers and extensions
 	glewExperimental = GL_TRUE;
-	// Initialize GLEW to setup the OpenGL Function pointers
-	if (GLEW_OK != glewInit())
-	{
-		std::cout << "Failed to initialize GLEW" << std::endl;
-		return EXIT_FAILURE;
-	}
-
-	// Define the viewport dimensions
+	if (GLEW_OK != glewInit()) return EXIT_FAILURE;
 	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-
-
 
 	Shader lightingShader("assets/shader/lighting.vs", "assets/shader/lighting.frag");
 	Shader lampShader("assets/shader/lamp.vs", "assets/shader/lamp.frag");
-	
-	//models
+
 	Model Isla((char*)"assets/modelos/Isla.obj");
 	Model Casas((char*)"assets/modelos/casas.obj");
-	/*Model Camino((char*)"assets/modelos/camino.obj");*/
 	Model Cementerio((char*)"assets/modelos/cementerio.obj");
 	Model Panteon((char*)"assets/modelos/panteonM.obj");
 	Model EntradaPanteon((char*)"assets/modelos/EntradaPanteon.obj");
@@ -191,77 +175,77 @@ int main()
 	Model LeftLeg((char*)"assets/modelos/left_Leg.obj");
 	Model RightLeg((char*)"assets/modelos/right_Leg.obj");
 
-	// First, set the container's VAO (and VBO)
 	GLuint VBO, VAO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 	glBindVertexArray(VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	// Position attribute
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
-	// normal attribute
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
-	// Set texture units
 	lightingShader.Use();
 	glUniform1i(glGetUniformLocation(lightingShader.Program, "Material.difuse"), 0);
 	glUniform1i(glGetUniformLocation(lightingShader.Program, "Material.specular"), 1);
-
 	glm::mat4 projection = glm::perspective(camera.GetZoom(), (GLfloat)SCREEN_WIDTH / (GLfloat)SCREEN_HEIGHT, 0.1f, 100.0f);
 
-	// Game loop
+	// -------------------------------------------------------------------------
+	// --- ANIMACIÓN PREDEFINIDA: REVERENCIA / ORACIÓN ---
+	// -------------------------------------------------------------------------
+
+	// 1. Postura inicial (De pie, brazos a los lados)
+	KeyFrame[0] = { charPosX, charPosY, charPosZ, charRotY, 0,0,0,0,
+					0.0f, 0,   // torsoPitch
+					0.0f, 0,   // headRot
+					0.0f, 0,   // leftArmRot
+					0.0f, 0,   // rightArmRot
+					0.0f, 0, 0.0f, 0 }; // Piernas
+
+	// 2. Manos juntas (Levantar brazos ligeramente y agachar un poco la cabeza)
+	KeyFrame[1] = KeyFrame[0];
+	KeyFrame[1].leftArmRot = -0.05f;  // Rota brazo izquierdo hacia adelante
+	KeyFrame[1].rightArmRot = -0.05f; // Rota brazo derecho hacia adelante
+	KeyFrame[1].headRot = 0.5f;      // Inclina la cabeza hacia abajo
+
+	// 3. Inclinación (El torso se inclina hacia adelante, los brazos mantienen su ángulo relativo)
+	KeyFrame[2] = KeyFrame[1];
+	KeyFrame[2].torsoPitch = 0.35f;   // Inclina el torso hacia el frente
+	KeyFrame[2].headRot = 0.25f;      // Baja un poco más la cabeza
+
+	// 4. Vuelve a la postura (El torso se levanta, las manos siguen juntas)
+	KeyFrame[3] = KeyFrame[1];        // Copiamos el frame 2 exacto
+
+	// 5. Regreso total al reposo (Opcional para que quede listo para otra animación)
+	KeyFrame[4] = KeyFrame[0];
+
+	// Le indicamos al sistema que ya hay 5 frames grabados en memoria
+	FrameIndex = 5;
+
 	while (!glfwWindowShouldClose(window))
 	{
-
-		// Calculate deltatime of current frame
 		GLfloat currentFrame = glfwGetTime();
-		deltaTime = currentFrame - lastFrame;
-		lastFrame = currentFrame;
+		deltaTime = currentFrame - lastFrame; lastFrame = currentFrame;
 
-		// Check if any events have been activiated (key pressed, mouse moved etc.) and call corresponding response functions
 		glfwPollEvents();
 		DoMovement();
 		Animation();
 
-		// Clear the colorbuffer
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		// OpenGL options
 		glEnable(GL_DEPTH_TEST);
 
-
-		glm::mat4 modelTemp = glm::mat4(1.0f); //Temp
-
-
-
-		// Use cooresponding shader when setting uniforms/drawing objects
 		lightingShader.Use();
-
 		glUniform1i(glGetUniformLocation(lightingShader.Program, "diffuse"), 0);
-		//glUniform1i(glGetUniformLocation(lightingShader.Program, "specular"),1);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "viewPos"), camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
 
-		GLint viewPosLoc = glGetUniformLocation(lightingShader.Program, "viewPos");
-		glUniform3f(viewPosLoc, camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
-
-
-		// Directional light
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.direction"), -0.2f, -1.0f, -0.3f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.ambient"), 0.6f, 0.6f, 0.6f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.diffuse"), 0.6f, 0.6f, 0.6f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.specular"), 0.3f, 0.3f, 0.3f);
 
-
-		// Point light 1
-		glm::vec3 lightColor;
-		lightColor.x = abs(sin(glfwGetTime() * Light1.x));
-		lightColor.y = abs(sin(glfwGetTime() * Light1.y));
-		lightColor.z = sin(glfwGetTime() * Light1.z);
-
-
+		glm::vec3 lightColor(abs(sin(glfwGetTime() * Light1.x)), abs(sin(glfwGetTime() * Light1.y)), sin(glfwGetTime() * Light1.z));
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].position"), pointLightPositions[0].x, pointLightPositions[0].y, pointLightPositions[0].z);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].ambient"), lightColor.x, lightColor.y, lightColor.z);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].diffuse"), lightColor.x, lightColor.y, lightColor.z);
@@ -270,416 +254,212 @@ int main()
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[0].linear"), 0.045f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[0].quadratic"), 0.075f);
 
-
-		// SpotLight
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.position"), camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.direction"), camera.GetFront().x, camera.GetFront().y, camera.GetFront().z);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.ambient"), 0.2f, 0.2f, 0.8f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.diffuse"), 0.2f, 0.2f, 0.8f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.specular"), 0.0f, 0.0f, 0.0f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.constant"), 1.0f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.linear"), 0.3f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.quadratic"), 0.7f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.cutOff"), glm::cos(glm::radians(12.0f)));
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.outerCutOff"), glm::cos(glm::radians(18.0f)));
 
-
-		// Set material properties
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "material.shininess"), 5.0f);
 
-		// Create camera transformations
-		glm::mat4 view;
-		view = camera.GetViewMatrix();
-
-		// Get the uniform locations
+		glm::mat4 view = camera.GetViewMatrix();
 		GLint modelLoc = glGetUniformLocation(lightingShader.Program, "model");
 		GLint viewLoc = glGetUniformLocation(lightingShader.Program, "view");
 		GLint projLoc = glGetUniformLocation(lightingShader.Program, "projection");
-
-		// Pass the matrices to the shader
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
 
 		glm::mat4 model(1);
 
-		// Dibujar isla
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Isla.Draw(lightingShader);
+		// Entorno
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Isla.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Casas.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Cementerio.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Panteon.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); EntradaPanteon.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Iglesia.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Muelles.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); SK.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Velas.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Monumento.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Fuente.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Pasto.Draw(lightingShader);
 
-		// Dibujar casas
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Casas.Draw(lightingShader);
+		model = glm::mat4(1.0f); model = glm::rotate(model, glm::radians(rotacionPeces), glm::vec3(1.0f, 0.0f, 0.0f)); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Peces.Draw(lightingShader);
 
-		// Dibujar cementerio
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Cementerio.Draw(lightingShader);
+		glm::vec3 boatPosition = glm::mix(glm::vec3(19.0f, 0.5f, -3.8f), glm::vec3(9.5f, 0.5f, -1.9f), boatT);
+		glm::vec3 boatDirection = glm::normalize(glm::vec3(9.5f, 0.5f, -1.9f) - glm::vec3(19.0f, 0.5f, -3.8f));
+		boatPosition += glm::vec3(-boatDirection.z, 0.0f, boatDirection.x) * (sin(boatT * glm::pi<float>() * 4.0f) * 0.30f);
+		model = glm::mat4(1.0f); model = glm::translate(model, boatPosition); model = glm::rotate(model, glm::radians(225.0f + sin(boatT * glm::pi<float>() * 4.0f) * 4.0f), glm::vec3(0.0f, 1.0f, 0.0f)); model = glm::scale(model, glm::vec3(0.25f)); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Boat.Draw(lightingShader);
 
-		// Dibujar Panteon
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Panteon.Draw(lightingShader);
-
-		// Dibujar entrada del panteón
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		EntradaPanteon.Draw(lightingShader);
-
-		// Dibujar iglesia
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Iglesia.Draw(lightingShader);
-
-		// Dibujar muelles
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Muelles.Draw(lightingShader);
-
-		// Dibujar SK
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		SK.Draw(lightingShader);
-
-		// ------------------------------
-		// Barca principal
-		// ------------------------------
-
-		glm::vec3 boatStart(19.0f, 0.5f, -3.8f);
-		glm::vec3 boatEnd(9.5f, 0.5f, -1.9f);
-
-		// Movimiento principal entre ambos muelles
-		glm::vec3 boatPosition = glm::mix(boatStart, boatEnd, boatT);
-
-		// Direccion general del recorrido
-		glm::vec3 boatDirection = glm::normalize(boatEnd - boatStart);
-
-		// Direccion perpendicular para mover la barca
-		// ligeramente hacia los lados
-		glm::vec3 boatSide(-boatDirection.z, 0.0f, boatDirection.x);
-
-		// Movimiento lateral.
-		// Al inicio y al final queda exactamente
-		// sobre la trayectoria principal.
-		float boatSideMovement = sin(boatT * glm::pi<float>() * 4.0f) * 0.30f;
-		boatPosition += boatSide * boatSideMovement;
-
-
-		// Pequeño cambio de direccion mientras navega
-		float boatRotation = 225.0f + sin(boatT * glm::pi<float>() * 4.0f) * 4.0f;
-
-		// Transformaciones
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, boatPosition);
-		model = glm::rotate(model, glm::radians(boatRotation), glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.25f));
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Boat.Draw(lightingShader);
-
-		// ------------------------------
-		// Barca de fondo 1
-		// ------------------------------
 		float bgAngleRad = glm::radians(-bgBoat1Angle);
+		model = glm::mat4(1.0f); model = glm::translate(model, glm::vec3(cos(bgAngleRad) * 18.0f, 0.5f, sin(bgAngleRad) * 12.0f)); model = glm::rotate(model, glm::radians(glm::degrees(atan2(-sin(bgAngleRad) * 18.0f, cos(bgAngleRad) * 12.0f)) - 56.3f + 180.0f), glm::vec3(0.0f, 1.0f, 0.0f)); model = glm::scale(model, glm::vec3(0.25f)); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Boat.Draw(lightingShader);
 
-		// Centro del recorrido
-		float bgCenterX = 0.0f;
-		float bgCenterZ = 0.0f;
+		// -------------------------------------------------------------------------
+		glm::vec3 pivotTorso(0.0f, 1.0f, 0.0f);
+		glm::vec3 pivotHead(0.0f, 1.6f, 0.0f);
+		glm::vec3 pivotLArm(0.3f, 1.4f, 0.0f);
+		glm::vec3 pivotRArm(-0.3f, 1.4f, 0.0f);
+		glm::vec3 pivotLLeg(0.15f, 1.0f, 0.0f);
+		glm::vec3 pivotRLeg(-0.15f, 1.0f, 0.0f);
 
-		// Recorrido amplio alrededor de la isla
-		float bgRadiusX = 18.0f;
-		float bgRadiusZ = 12.0f;
+		// -------------------------------------------------------------------------
+		// --- RENDERIZADO DEL PERSONAJE (POSICIÓN EXACTA DESDE BLENDER) ---
+		// -------------------------------------------------------------------------
 
-		// Posicion de la barca
-		float bgX = bgCenterX + cos(bgAngleRad) * bgRadiusX;
-		float bgZ = bgCenterZ + sin(bgAngleRad) * bgRadiusZ;
+		// 1. Asignamos las coordenadas exactas de Blender a las variables globales de posición
+		charPosX = -0.756f;
+		charPosY = 0.08f; // Altura Z de Blender pasa a Y en OpenGL
+		charPosZ = 0.0f; // Profundidad Y de Blender pasa a Z en OpenGL
 
-		// Direccion real de movimiento
-		float dirX = -sin(bgAngleRad) * bgRadiusX;
-		float dirZ = cos(bgAngleRad) * bgRadiusZ;
+		// 2. Matriz base del personaje en el mundo
+		glm::mat4 baseMatrix = glm::mat4(1.0f);
+		baseMatrix = glm::translate(baseMatrix, glm::vec3(charPosX, charPosY, charPosZ));
+		baseMatrix = glm::rotate(baseMatrix, glm::radians(charRotY), glm::vec3(0.0f, 1.0f, 0.0f));
 
-		// Angulo de direccion
-		float directionAngle = glm::degrees(atan2(dirX, dirZ));
-
-		// Correccion de orientacion del modelo
-		float modelOffset = -56.3f;
-		float bgRotation = directionAngle + modelOffset + 180.0f;
-
-		// Movimiento suave por el agua
-		float balanceo =
-			sin(bgBoat1Angle * 0.12f) * 2.0f;
-
-		// Dibujar barca
-		model = glm::mat4(1.0f);
-		model = glm::translate(model,glm::vec3(bgX, 0.5f, bgZ));
-		model = glm::rotate(model,glm::radians(bgRotation),glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::scale(model,glm::vec3(0.25f));
-		glUniformMatrix4fv(modelLoc,1,GL_FALSE,glm::value_ptr(model));
-		Boat.Draw(lightingShader);
-
-		// Dibujo torso
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		// 3. TORSO (Incluye la inclinación de 60° para la reverencia)
+		glm::mat4 torsoMatrix = baseMatrix;
+		torsoMatrix = glm::rotate(torsoMatrix, glm::radians(torsoPitch), glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(torsoMatrix));
 		Torso.Draw(lightingShader);
 
-		// Dibujo cabeza
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		// 4. CABEZA (Hereda los movimientos del torso)
+		glm::mat4 headMatrix = torsoMatrix;
+		headMatrix = glm::rotate(headMatrix, glm::radians(headRot), glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(headMatrix));
 		Head.Draw(lightingShader);
 
-		// Dibujo brazo izquierdo
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		// 5. BRAZO IZQUIERDO
+		glm::mat4 lArmMatrix = torsoMatrix;
+		lArmMatrix = glm::rotate(lArmMatrix, glm::radians(leftArmRot), glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(lArmMatrix));
 		LeftArm.Draw(lightingShader);
 
-		// Dibujo brazo derecho
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		// 6. BRAZO DERECHO
+		glm::mat4 rArmMatrix = torsoMatrix;
+		rArmMatrix = glm::rotate(rArmMatrix, glm::radians(rightArmRot), glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(rArmMatrix));
 		RightArm.Draw(lightingShader);
 
-		// Dibujo pierna izquierda
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		// 7. PIERNA IZQUIERDA
+		glm::mat4 lLegMatrix = baseMatrix; // Las piernas rotan desde la base, no se inclinan con el torso
+		lLegMatrix = glm::rotate(lLegMatrix, glm::radians(leftLegRot), glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(lLegMatrix));
 		LeftLeg.Draw(lightingShader);
 
-		// Dibujo pierna derecha
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		// 8. PIERNA DERECHA
+		glm::mat4 rLegMatrix = baseMatrix;
+		rLegMatrix = glm::rotate(rLegMatrix, glm::radians(rightLegRot), glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(rLegMatrix));
 		RightLeg.Draw(lightingShader);
 
-		// Dibujar velas
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Velas.Draw(lightingShader);
 
-		// Dibujar monumento
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Monumento.Draw(lightingShader);
-
-		// Dibujar camino
-		/*model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Camino.Draw(lightingShader);*/
-
-		// Dibujar fuente
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Fuente.Draw(lightingShader);
-
-		// Dibujar pasto
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Pasto.Draw(lightingShader);
-
-		// Dibujo pez
-		model = glm::mat4(1.0f);
-		// 2. Aplica la rotación continua en el eje X (1.0f, 0.0f, 0.0f)
-		model = glm::rotate(model, glm::radians(rotacionPeces), glm::vec3(1.0f, 0.0f, 0.0f));
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Peces.Draw(lightingShader);
-
-		// Also draw the lamp object, again binding the appropriate shader
+		// Lámpara (representación visual de la luz puntual)
 		lampShader.Use();
-		// Get location objects for the matrices on the lamp shader (these could be different on a different shader)
 		modelLoc = glGetUniformLocation(lampShader.Program, "model");
 		viewLoc = glGetUniformLocation(lampShader.Program, "view");
 		projLoc = glGetUniformLocation(lampShader.Program, "projection");
-
-		// Set matrices
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-		model = glm::mat4(1);
-		model = glm::translate(model, lightPos);
-		model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		// Draw the light object (using light's vertex attributes)
-		
-			model = glm::mat4(1);
-			model = glm::translate(model, pointLightPositions[0]);
-			model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
-			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-			glBindVertexArray(VAO);
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		
-		glBindVertexArray(0);
 
+		model = glm::mat4(1); model = glm::translate(model, pointLightPositions[0]); model = glm::scale(model, glm::vec3(0.2f)); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		glBindVertexArray(VAO); glDrawArrays(GL_TRIANGLES, 0, 36); glBindVertexArray(0);
 
-
-		// Swap the screen buffers
 		glfwSwapBuffers(window);
 	}
-
-
-	// Terminate GLFW, clearing any resources allocated by GLFW.
-	glfwTerminate();
-
-
-
-	return 0;
+	glfwTerminate(); return 0;
 }
 
-// Moves/alters the camera positions based on user input
 void DoMovement()
 {
+	if (keys[GLFW_KEY_W] || keys[GLFW_KEY_UP]) camera.ProcessKeyboard(FORWARD, deltaTime);
+	if (keys[GLFW_KEY_S] || keys[GLFW_KEY_DOWN]) camera.ProcessKeyboard(BACKWARD, deltaTime);
+	if (keys[GLFW_KEY_A] || keys[GLFW_KEY_LEFT]) camera.ProcessKeyboard(LEFT, deltaTime);
+	if (keys[GLFW_KEY_D] || keys[GLFW_KEY_RIGHT]) camera.ProcessKeyboard(RIGHT, deltaTime);
 
-	// Camera controls
-	if (keys[GLFW_KEY_W] || keys[GLFW_KEY_UP])
-	{
-		camera.ProcessKeyboard(FORWARD, deltaTime);
+	if (keys[GLFW_KEY_T]) pointLightPositions[0].x += 0.01f;
+	if (keys[GLFW_KEY_G]) pointLightPositions[0].x -= 0.01f;
+	if (keys[GLFW_KEY_Y]) pointLightPositions[0].y += 0.01f;
+	if (keys[GLFW_KEY_H]) pointLightPositions[0].y -= 0.01f;
+	if (keys[GLFW_KEY_U]) pointLightPositions[0].z -= 0.1f;
+	if (keys[GLFW_KEY_J]) pointLightPositions[0].z += 0.01f;
 
-	}
-
-	if (keys[GLFW_KEY_S] || keys[GLFW_KEY_DOWN])
-	{
-		camera.ProcessKeyboard(BACKWARD, deltaTime);
-
-
-	}
-
-	if (keys[GLFW_KEY_A] || keys[GLFW_KEY_LEFT])
-	{
-		camera.ProcessKeyboard(LEFT, deltaTime);
-
-
-	}
-
-	if (keys[GLFW_KEY_D] || keys[GLFW_KEY_RIGHT])
-	{
-		camera.ProcessKeyboard(RIGHT, deltaTime);
-
-
-	}
-
-	if (keys[GLFW_KEY_T])
-	{
-		pointLightPositions[0].x += 0.01f;
-	}
-	if (keys[GLFW_KEY_G])
-	{
-		pointLightPositions[0].x -= 0.01f;
-	}
-
-	if (keys[GLFW_KEY_Y])
-	{
-		pointLightPositions[0].y += 0.01f;
-	}
-
-	if (keys[GLFW_KEY_H])
-	{
-		pointLightPositions[0].y -= 0.01f;
-	}
-	if (keys[GLFW_KEY_U])
-	{
-		pointLightPositions[0].z -= 0.1f;
-	}
-	if (keys[GLFW_KEY_J])
-	{
-		pointLightPositions[0].z += 0.01f;
-	}
-	
+	// Controles manuales restantes (Teclas 2, 3, 4, etc.)
+	if (keys[GLFW_KEY_2]) leftArmRot -= 0.001f;
+	if (keys[GLFW_KEY_3]) rightArmRot += 0.001f;
+	if (keys[GLFW_KEY_4]) rightArmRot -= 0.001f;
+	if (keys[GLFW_KEY_5]) torsoPitch += 0.001f;
+	if (keys[GLFW_KEY_6]) torsoPitch -= 0.001f;
+	if (keys[GLFW_KEY_I]) charPosZ -= 0.005f;
+	if (keys[GLFW_KEY_K]) charPosZ += 0.005f;
 }
 
-// Is called whenever a key is pressed/released via GLFW
-void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode)
+void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
-	if (GLFW_KEY_ESCAPE == key && GLFW_PRESS == action)
-	{
-		glfwSetWindowShouldClose(window, GL_TRUE);
-	}
+	if (GLFW_KEY_ESCAPE == key && GLFW_PRESS == action) glfwSetWindowShouldClose(window, GL_TRUE);
+	if (key >= 0 && key < 1024) { if (action == GLFW_PRESS) keys[key] = true; else if (action == GLFW_RELEASE) keys[key] = false; }
+	if (key == GLFW_KEY_M && action == GLFW_PRESS) { if (!boatMoving) { boatT = 0.0f; boatMoving = true; } }
+	if (keys[GLFW_KEY_SPACE]) { active = !active; if (active) Light1 = glm::vec3(0.2f, 0.8f, 1.0f); else Light1 = glm::vec3(0); }
 
-	if (key >= 0 && key < 1024)
-	{
-		if (action == GLFW_PRESS)
-		{
-			keys[key] = true;
-		}
-		else if (action == GLFW_RELEASE)
-		{
-			keys[key] = false;
-		}
-	}
+	// Tecla F: Guardar Keyframe (Opcional, si quieres crear nuevas animaciones)
+	if (key == GLFW_KEY_F && action == GLFW_PRESS) saveFrame();
 
-	// Iniciar recorrido de la barca con M
-	if (key == GLFW_KEY_M && action == GLFW_PRESS)
-	{
-		if (!boatMoving)
-		{
-			boatT = 0.0f;
-			boatMoving = true;
-		}// Iniciar recorrido de la barca con M
-		if (key == GLFW_KEY_M && action == GLFW_PRESS)
-		{
-			if (!boatMoving)
-			{
-				boatT = 0.0f;
-				boatMoving = true;
+	// Tecla 1 o L: Reproducir la animación de Reverencia
+	if ((key == GLFW_KEY_1 || key == GLFW_KEY_L) && action == GLFW_PRESS) {
+		if (play == false && (FrameIndex > 1)) {
+			resetElements();
+			interpolation();
+			play = true;
+			playIndex = 0;
+			i_curr_steps = 0;
+		}
+		else play = false;
+	}
+}
+
+void Animation() {
+	rotacionPeces += 90.0f * deltaTime; if (rotacionPeces >= 360.0f) rotacionPeces -= 360.0f;
+	if (boatMoving) { boatT += 0.08f * deltaTime; if (boatT >= 1.0f) { boatT = 1.0f; boatMoving = false; } }
+	bgBoat1Angle += 12.0f * deltaTime; if (bgBoat1Angle >= 360.0f) bgBoat1Angle -= 360.0f;
+
+	// Motor de interpolación matemática para la animación del personaje
+	if (play) {
+		if (i_curr_steps >= i_max_steps) {
+			playIndex++;
+			if (playIndex > FrameIndex - 2) {
+				playIndex = 0;
+				play = false;
+				printf("Animacion terminada.\n");
+			}
+			else {
+				i_curr_steps = 0;
+				interpolation();
 			}
 		}
-	}
+		else {
+			charPosX += KeyFrame[playIndex].incX;
+			charPosY += KeyFrame[playIndex].incY;
+			charPosZ += KeyFrame[playIndex].incZ;
+			charRotY += KeyFrame[playIndex].charRotYInc;
+			torsoPitch += KeyFrame[playIndex].torsoPitchInc;
+			headRot += KeyFrame[playIndex].headRotInc;
+			leftArmRot += KeyFrame[playIndex].leftArmRotInc;
+			rightArmRot += KeyFrame[playIndex].rightArmRotInc;
+			leftLegRot += KeyFrame[playIndex].leftLegRotInc;
+			rightLegRot += KeyFrame[playIndex].rightLegRotInc;
 
-	if (keys[GLFW_KEY_SPACE])
-	{
-		active = !active;
-		if (active)
-		{
-			Light1 = glm::vec3(0.2f, 0.8f, 1.0f);
-			
+			i_curr_steps++;
 		}
-		else
-		{
-			Light1 = glm::vec3(0);//Cuado es solo un valor en los 3 vectores pueden dejar solo una componente
-		}
-	}
-	
-}
-void Animation() {
-	// --- ANIMACIÓN DE PECES (Solo rotación) ---
-	float velocidadGiro = 90.0f; // Los peces girarán 90 grados por segundo
-
-	rotacionPeces += velocidadGiro * deltaTime;
-
-	// Evitar que el número crezca al infinito
-	if (rotacionPeces >= 360.0f) {
-		rotacionPeces -= 360.0f;
-	}
-
-	// Movimiento de la barca principal
-	if (boatMoving)
-	{
-		boatT += 0.08f * deltaTime;
-
-		if (boatT >= 1.0f)
-		{
-			boatT = 1.0f;
-			boatMoving = false;
-		}
-	}
-
-	// Barca de fondo 1
-	bgBoat1Angle += 12.0f * deltaTime;
-
-	if (bgBoat1Angle >= 360.0f)
-	{
-		bgBoat1Angle -= 360.0f;
 	}
 }
 
-void MouseCallback(GLFWwindow *window, double xPos, double yPos)
-{
-	if (firstMouse)
-	{
-		lastX = xPos;
-		lastY = yPos;
-		firstMouse = false;
-	}
-
-	GLfloat xOffset = xPos - lastX;
-	GLfloat yOffset = lastY - yPos;  // Reversed since y-coordinates go from bottom to left
-
-	lastX = xPos;
-	lastY = yPos;
-
+void MouseCallback(GLFWwindow* window, double xPos, double yPos) {
+	if (firstMouse) { lastX = xPos; lastY = yPos; firstMouse = false; }
+	GLfloat xOffset = xPos - lastX; GLfloat yOffset = lastY - yPos;
+	lastX = xPos; lastY = yPos;
 	camera.ProcessMouseMovement(xOffset, yOffset);
 }
