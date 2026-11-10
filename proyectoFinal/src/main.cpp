@@ -1,5 +1,7 @@
 #include <iostream>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 
 // GLEW
 #include <GL/glew.h>
@@ -30,7 +32,6 @@ void DoMovement();
 void Animation();
 
 // Funciones Keyframes
-// Funciones Keyframes
 void saveFrame(void);
 void resetElements(void);
 void interpolation(void);
@@ -41,8 +42,8 @@ int SCREEN_WIDTH, SCREEN_HEIGHT;
 
 // Camera
 Camera camera(glm::vec3(21.292f, 1.498f, -2.335f));
-GLfloat lastX = WIDTH / 2.0;
-GLfloat lastY = HEIGHT / 2.0;
+GLfloat lastX = WIDTH / 2.0f;
+GLfloat lastY = HEIGHT / 2.0f;
 bool keys[1024];
 bool firstMouse = true;
 
@@ -53,8 +54,11 @@ float bgBoat1Angle = 0.0f;
 float bgBoat2Angle = 180.0f;
 
 // -----------------------------------------------------
-// --- VARIABLES KEYFRAMES DEL PERSONAJE ---
+// --- VARIABLES KEYFRAMES DEL PERSONAJE (ANGULOS EN GRADOS) ---
 // -----------------------------------------------------
+// El personaje mira hacia -X. Su lado izquierdo/derecho es el eje Z.
+// Angulo positivo del torso/cabeza = inclinacion hacia adelante (-X).
+// Angulo negativo de brazo = brazo hacia adelante (-X).
 float charPosX = 0.0f, charPosY = 0.0f, charPosZ = 0.0f;
 float charRotY = 0.0f;
 
@@ -62,6 +66,24 @@ float torsoPitch = 0.0f;
 float headRot = 0.0f;
 float leftArmRot = 0.0f, rightArmRot = 0.0f;
 float leftLegRot = 0.0f, rightLegRot = 0.0f;
+
+// Pivotes articulares medidos de los .obj (coordenadas de la escena).
+// Como el eje de rotacion es Z, la coordenada Z del pivote no influye.
+const glm::vec3 pivotHip(-0.7571f, 1.3808f, -0.8875f);       // base del torso
+const glm::vec3 pivotNeck(-0.7570f, 1.4669f, -0.8877f);      // base de la cabeza
+const glm::vec3 pivotLShoulder(-0.7538f, 1.4618f, -0.8505f); // hombro izquierdo
+const glm::vec3 pivotRShoulder(-0.7538f, 1.4618f, -0.9247f); // hombro derecho
+const glm::vec3 pivotLHip(-0.7586f, 1.3808f, -0.8761f);      // cadera izquierda
+const glm::vec3 pivotRHip(-0.7587f, 1.3808f, -0.8991f);      // cadera derecha
+
+// Rota una parte alrededor de su articulacion sobre el eje Z:
+// M = P * T(p) * Rz(angulo) * T(-p)
+static glm::mat4 rotAround(const glm::mat4& parent, const glm::vec3& pivot, float degrees) {
+	glm::mat4 m = glm::translate(parent, pivot);
+	m = glm::rotate(m, glm::radians(degrees), glm::vec3(0.0f, 0.0f, 1.0f));
+	m = glm::translate(m, -pivot);
+	return m;
+}
 
 typedef struct _frame {
 	float charPosX, charPosY, charPosZ, charRotY;
@@ -155,41 +177,42 @@ int main()
 	glm::mat4 projection = glm::perspective(camera.GetZoom(), (GLfloat)SCREEN_WIDTH / (GLfloat)SCREEN_HEIGHT, 0.1f, 100.0f);
 
 	// -------------------------------------------------------------------------
-	// --- ANIMACIÓN PREDEFINIDA: REVERENCIA / ORACIÓN ---
+	// --- ANIMACION PREDEFINIDA: REVERENCIA (grados) ---
+	// Brazos negativos = brazos hacia adelante (-X).
 	// -------------------------------------------------------------------------
+	// 0. De pie
+	KeyFrame[0] = { 0.0f, 0.0f, 0.0f, 0.0f,  0.0f, 0.0f, 0.0f, 0.0f,
+					0.0f, 0.0f,    // torsoPitch
+					0.0f, 0.0f,    // headRot
+					0.0f, 0.0f,    // leftArmRot
+					0.0f, 0.0f,    // rightArmRot
+					0.0f, 0.0f,    // leftLegRot
+					0.0f, 0.0f };  // rightLegRot
 
-	// 1. Postura inicial (De pie, brazos a los lados)
-	KeyFrame[0] = { charPosX, charPosY, charPosZ, charRotY, 0,0,0,0,
-					0.0f, 0,   // torsoPitch
-					0.0f, 0,   // headRot
-					0.0f, 0,   // leftArmRot
-					0.0f, 0,   // rightArmRot
-					0.0f, 0, 0.0f, 0 }; // Piernas
-
-	// 2. Manos juntas (Levantar brazos ligeramente y agachar un poco la cabeza)
+	// 1. Manos juntas al frente, cabeza ligeramente baja
 	KeyFrame[1] = KeyFrame[0];
-	KeyFrame[1].leftArmRot = -0.05f;  // Rota brazo izquierdo hacia adelante
-	KeyFrame[1].rightArmRot = -0.05f; // Rota brazo derecho hacia adelante
-	KeyFrame[1].headRot = 0.5f;      // Inclina la cabeza hacia abajo
+	KeyFrame[1].leftArmRot = -15.0f;
+	KeyFrame[1].rightArmRot = -15.0f;
+	KeyFrame[1].headRot = 5.0f;
 
-	// 3. Inclinación (El torso se inclina hacia adelante, los brazos mantienen su ángulo relativo)
+	// 2. Reverencia: torso inclinado 30 grados hacia adelante
 	KeyFrame[2] = KeyFrame[1];
-	KeyFrame[2].torsoPitch = 0.35f;   // Inclina el torso hacia el frente
-	KeyFrame[2].headRot = 0.25f;      // Baja un poco más la cabeza
+	KeyFrame[2].torsoPitch = 30.0f;
+	KeyFrame[2].headRot = 10.0f;
 
-	// 4. Vuelve a la postura (El torso se levanta, las manos siguen juntas)
-	KeyFrame[3] = KeyFrame[1];        // Copiamos el frame 2 exacto
+	// 3. Regreso a la postura de manos juntas
+	KeyFrame[3] = KeyFrame[1];
 
-	// 5. Regreso total al reposo (Opcional para que quede listo para otra animación)
+	// 4. Reposo
 	KeyFrame[4] = KeyFrame[0];
 
-	// Le indicamos al sistema que ya hay 5 frames grabados en memoria
 	FrameIndex = 5;
 
 	while (!glfwWindowShouldClose(window))
 	{
-		GLfloat currentFrame = glfwGetTime();
-		deltaTime = currentFrame - lastFrame; lastFrame = currentFrame;
+		GLfloat currentFrame = (GLfloat)glfwGetTime();
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
 
 		glfwPollEvents();
 		DoMovement();
@@ -204,9 +227,9 @@ int main()
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "viewPos"), camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
 
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.direction"), -0.2f, -1.0f, -0.3f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.ambient"),0.08f, 0.10f, 0.16f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.diffuse"),0.18f, 0.22f, 0.32f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.specular"),0.20f, 0.24f, 0.35f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.ambient"), 0.08f, 0.10f, 0.16f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.diffuse"), 0.18f, 0.22f, 0.32f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.specular"), 0.20f, 0.24f, 0.35f);
 
 		float time = (float)glfwGetTime();
 
@@ -373,66 +396,46 @@ int main()
 		Boat.Draw(lightingShader);
 
 		// -------------------------------------------------------------------------
-		glm::vec3 pivotTorso(0.0f, 1.0f, 0.0f);
-		glm::vec3 pivotHead(0.0f, 1.6f, 0.0f);
-		glm::vec3 pivotLArm(0.3f, 1.4f, 0.0f);
-		glm::vec3 pivotRArm(-0.3f, 1.4f, 0.0f);
-		glm::vec3 pivotLLeg(0.15f, 1.0f, 0.0f);
-		glm::vec3 pivotRLeg(-0.15f, 1.0f, 0.0f);
-
+		// --- PERSONAJE: jerarquia con pivotes medidos, rotacion sobre Z ---
+		// Los .obj ya estan en coordenadas de la escena; la posicion base es 0.
 		// -------------------------------------------------------------------------
-		// --- RENDERIZADO DEL PERSONAJE (POSICIÓN EXACTA DESDE BLENDER) ---
-		// -------------------------------------------------------------------------
-
-		// 1. Asignamos las coordenadas exactas de Blender a las variables globales de posición
-		charPosX = -0.756f;
-		charPosY = 0.08f; // Altura Z de Blender pasa a Y en OpenGL
-		charPosZ = 0.0f; // Profundidad Y de Blender pasa a Z en OpenGL
-
-		// 2. Matriz base del personaje en el mundo
 		glm::mat4 baseMatrix = glm::mat4(1.0f);
 		baseMatrix = glm::translate(baseMatrix, glm::vec3(charPosX, charPosY, charPosZ));
 		baseMatrix = glm::rotate(baseMatrix, glm::radians(charRotY), glm::vec3(0.0f, 1.0f, 0.0f));
 
-		// 3. TORSO (Incluye la inclinación de 60° para la reverencia)
-		glm::mat4 torsoMatrix = baseMatrix;
-		torsoMatrix = glm::rotate(torsoMatrix, glm::radians(torsoPitch), glm::vec3(1.0f, 0.0f, 0.0f));
+		// TORSO: pivota en la cadera
+		glm::mat4 torsoMatrix = rotAround(baseMatrix, pivotHip, torsoPitch);
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(torsoMatrix));
 		Torso.Draw(lightingShader);
 
-		// 4. CABEZA (Hereda los movimientos del torso)
-		glm::mat4 headMatrix = torsoMatrix;
-		headMatrix = glm::rotate(headMatrix, glm::radians(headRot), glm::vec3(1.0f, 0.0f, 0.0f));
+		// CABEZA: hija del torso, pivota en el cuello
+		glm::mat4 headMatrix = rotAround(torsoMatrix, pivotNeck, headRot);
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(headMatrix));
 		Head.Draw(lightingShader);
 
-		// 5. BRAZO IZQUIERDO
-		glm::mat4 lArmMatrix = torsoMatrix;
-		lArmMatrix = glm::rotate(lArmMatrix, glm::radians(leftArmRot), glm::vec3(1.0f, 0.0f, 0.0f));
+		// BRAZO IZQUIERDO: hijo del torso, pivota en el hombro izquierdo
+		glm::mat4 lArmMatrix = rotAround(torsoMatrix, pivotLShoulder, leftArmRot);
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(lArmMatrix));
 		LeftArm.Draw(lightingShader);
 
-		// 6. BRAZO DERECHO
-		glm::mat4 rArmMatrix = torsoMatrix;
-		rArmMatrix = glm::rotate(rArmMatrix, glm::radians(rightArmRot), glm::vec3(1.0f, 0.0f, 0.0f));
+		// BRAZO DERECHO: hijo del torso, pivota en el hombro derecho
+		glm::mat4 rArmMatrix = rotAround(torsoMatrix, pivotRShoulder, rightArmRot);
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(rArmMatrix));
 		RightArm.Draw(lightingShader);
 
-		// 7. PIERNA IZQUIERDA
-		glm::mat4 lLegMatrix = baseMatrix; // Las piernas rotan desde la base, no se inclinan con el torso
-		lLegMatrix = glm::rotate(lLegMatrix, glm::radians(leftLegRot), glm::vec3(1.0f, 0.0f, 0.0f));
+		// PIERNAS: no heredan la inclinacion del torso, pivotan en la cadera
+		glm::mat4 lLegMatrix = rotAround(baseMatrix, pivotLHip, leftLegRot);
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(lLegMatrix));
 		LeftLeg.Draw(lightingShader);
 
-		// 8. PIERNA DERECHA
-		glm::mat4 rLegMatrix = baseMatrix;
-		rLegMatrix = glm::rotate(rLegMatrix, glm::radians(rightLegRot), glm::vec3(1.0f, 0.0f, 0.0f));
+		glm::mat4 rLegMatrix = rotAround(baseMatrix, pivotRHip, rightLegRot);
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(rLegMatrix));
 		RightLeg.Draw(lightingShader);
 
 		glfwSwapBuffers(window);
 	}
-	glfwTerminate(); return 0;
+	glfwTerminate();
+	return 0;
 }
 
 void DoMovement()
@@ -442,12 +445,12 @@ void DoMovement()
 	if (keys[GLFW_KEY_A] || keys[GLFW_KEY_LEFT]) camera.ProcessKeyboard(LEFT, deltaTime);
 	if (keys[GLFW_KEY_D] || keys[GLFW_KEY_RIGHT]) camera.ProcessKeyboard(RIGHT, deltaTime);
 
-	// Controles manuales restantes (Teclas 2, 3, 4, etc.)
-	if (keys[GLFW_KEY_2]) leftArmRot -= 0.001f;
-	if (keys[GLFW_KEY_3]) rightArmRot += 0.001f;
-	if (keys[GLFW_KEY_4]) rightArmRot -= 0.001f;
-	if (keys[GLFW_KEY_5]) torsoPitch += 0.001f;
-	if (keys[GLFW_KEY_6]) torsoPitch -= 0.001f;
+	// Ajuste manual de la pose (grados por frame)
+	if (keys[GLFW_KEY_2]) leftArmRot -= 0.5f;
+	if (keys[GLFW_KEY_3]) rightArmRot -= 0.5f;
+	if (keys[GLFW_KEY_4]) rightArmRot += 0.5f;
+	if (keys[GLFW_KEY_5]) torsoPitch += 0.5f;
+	if (keys[GLFW_KEY_6]) torsoPitch -= 0.5f;
 	if (keys[GLFW_KEY_I]) charPosZ -= 0.005f;
 	if (keys[GLFW_KEY_K]) charPosZ += 0.005f;
 }
@@ -458,10 +461,10 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 	if (key >= 0 && key < 1024) { if (action == GLFW_PRESS) keys[key] = true; else if (action == GLFW_RELEASE) keys[key] = false; }
 	if (key == GLFW_KEY_M && action == GLFW_PRESS) { if (!boatMoving) { boatT = 0.0f; boatMoving = true; } }
 
-	// Tecla F: Guardar Keyframe (Opcional, si quieres crear nuevas animaciones)
+	// Tecla F: guardar keyframe con la pose actual
 	if (key == GLFW_KEY_F && action == GLFW_PRESS) saveFrame();
 
-	// Tecla 1 o L: Reproducir la animación de Reverencia
+	// Tecla 1 o L: reproducir la reverencia
 	if ((key == GLFW_KEY_1 || key == GLFW_KEY_L) && action == GLFW_PRESS) {
 		if (play == false && (FrameIndex > 1)) {
 			resetElements();
@@ -481,7 +484,7 @@ void Animation() {
 	bgBoat2Angle += 10.0f * deltaTime;
 	if (bgBoat2Angle >= 360.0f) bgBoat2Angle -= 360.0f;
 
-	// Motor de interpolación matemática para la animación del personaje
+	// Motor de interpolacion por incrementos
 	if (play) {
 		if (i_curr_steps >= i_max_steps) {
 			playIndex++;
@@ -513,8 +516,10 @@ void Animation() {
 }
 
 void MouseCallback(GLFWwindow* window, double xPos, double yPos) {
-	if (firstMouse) { lastX = xPos; lastY = yPos; firstMouse = false; }
-	GLfloat xOffset = xPos - lastX; GLfloat yOffset = lastY - yPos;
-	lastX = xPos; lastY = yPos;
+	if (firstMouse) { lastX = (GLfloat)xPos; lastY = (GLfloat)yPos; firstMouse = false; }
+	GLfloat xOffset = (GLfloat)(xPos - lastX);
+	GLfloat yOffset = (GLfloat)(lastY - yPos);
+	lastX = (GLfloat)xPos;
+	lastY = (GLfloat)yPos;
 	camera.ProcessMouseMovement(xOffset, yOffset);
 }
