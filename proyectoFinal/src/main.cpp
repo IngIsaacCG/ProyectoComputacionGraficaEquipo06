@@ -40,12 +40,37 @@ void interpolation(void);
 const GLuint WIDTH = 800, HEIGHT = 600;
 int SCREEN_WIDTH, SCREEN_HEIGHT;
 
-// Camera
+// Camara original (libre: WASD + mouse). Tecla KP 0
 Camera camera(glm::vec3(21.292f, 1.498f, -2.335f));
 GLfloat lastX = WIDTH / 2.0f;
 GLfloat lastY = HEIGHT / 2.0f;
 bool keys[1024];
 bool firstMouse = true;
+
+// Camaras fijas (teclas KP 1 a KP 4): solo giran con el mouse
+const int NUM_CAMERA = 4;
+glm::vec3 cameraPositions[NUM_CAMERA] = {
+	glm::vec3(20.95f, 1.80f, -2.58f),
+	glm::vec3(8.92f, 1.07f, -2.61f),
+	glm::vec3(2.30f, 1.07f, -2.46f),
+	glm::vec3(-1.30f, 1.64f, 0.37f)
+};
+
+// Punto inicial al que mira cada camara fija (solo para calcular su angulo inicial)
+glm::vec3 cameraTargets[NUM_CAMERA] = {
+	glm::vec3(0.0f, 1.5f, -2.5f),
+	glm::vec3(0.0f, 0.0f, 0.0f),
+	glm::vec3(0.0f, 0.0f, 0.0f),
+	glm::vec3(0.0f, 1.0f, -2.0f)
+};
+
+// Angulos de giro de cada camara fija (grados)
+float cameraYaw[NUM_CAMERA];
+float cameraPitch[NUM_CAMERA];
+const float cameraSensitivity = 0.1f;
+
+int correntCamera = 0;        // indice de la camara fija activa
+bool useFreeCamera = true;    // true = camara original libre
 
 float rotacionPeces = 0.0f;
 float boatT = 0.0f;
@@ -53,12 +78,7 @@ bool boatMoving = false;
 float bgBoat1Angle = 0.0f;
 float bgBoat2Angle = 180.0f;
 
-// -----------------------------------------------------
-// --- VARIABLES KEYFRAMES DEL PERSONAJE (ANGULOS EN GRADOS) ---
-// -----------------------------------------------------
-// El personaje mira hacia -X. Su lado izquierdo/derecho es el eje Z.
-// Angulo positivo del torso/cabeza = inclinacion hacia adelante (-X).
-// Angulo negativo de brazo = brazo hacia adelante (-X).
+// Variables de animacion
 float charPosX = 0.0f, charPosY = 0.0f, charPosZ = 0.0f;
 float charRotY = 0.0f;
 
@@ -83,6 +103,15 @@ static glm::mat4 rotAround(const glm::mat4& parent, const glm::vec3& pivot, floa
 	m = glm::rotate(m, glm::radians(degrees), glm::vec3(0.0f, 0.0f, 1.0f));
 	m = glm::translate(m, -pivot);
 	return m;
+}
+
+// Convierte yaw y pitch (grados) en un vector de direccion de vista
+static glm::vec3 frontFromAngles(float yawDeg, float pitchDeg) {
+	glm::vec3 f;
+	f.x = cos(glm::radians(yawDeg)) * cos(glm::radians(pitchDeg));
+	f.y = sin(glm::radians(pitchDeg));
+	f.z = sin(glm::radians(yawDeg)) * cos(glm::radians(pitchDeg));
+	return glm::normalize(f);
 }
 
 typedef struct _frame {
@@ -146,6 +175,13 @@ int main()
 	if (GLEW_OK != glewInit()) return EXIT_FAILURE;
 	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
+	// Angulos iniciales de cada camara fija a partir de su punto de mira
+	for (int i = 0; i < NUM_CAMERA; i++) {
+		glm::vec3 d = glm::normalize(cameraTargets[i] - cameraPositions[i]);
+		cameraPitch[i] = glm::degrees(asin(d.y));
+		cameraYaw[i] = glm::degrees(atan2(d.z, d.x));
+	}
+
 	Shader lightingShader("assets/shader/lighting.vs", "assets/shader/lighting.frag");
 
 	Model Isla((char*)"assets/modelos/Isla.obj");
@@ -181,10 +217,6 @@ int main()
 	glUniform1i(glGetUniformLocation(lightingShader.Program, "Material.specular"), 1);
 	glm::mat4 projection = glm::perspective(camera.GetZoom(), (GLfloat)SCREEN_WIDTH / (GLfloat)SCREEN_HEIGHT, 0.1f, 100.0f);
 
-	// -------------------------------------------------------------------------
-	// --- ANIMACION PREDEFINIDA: REVERENCIA (grados) ---
-	// Brazos negativos = brazos hacia adelante (-X).
-	// -------------------------------------------------------------------------
 	// 0. De pie
 	KeyFrame[0] = { 0.0f, 0.0f, 0.0f, 0.0f,  0.0f, 0.0f, 0.0f, 0.0f,
 					0.0f, 0.0f,    // torsoPitch
@@ -228,8 +260,25 @@ int main()
 		glEnable(GL_DEPTH_TEST);
 
 		lightingShader.Use();
+
+		// Datos de la camara activa (se calculan una sola vez por frame)
+		glm::vec3 curPos;
+		glm::vec3 curFront;
+		glm::mat4 view;
+
+		if (useFreeCamera) {
+			curPos = camera.GetPosition();
+			curFront = camera.GetFront();
+			view = camera.GetViewMatrix();
+		}
+		else {
+			curPos = cameraPositions[correntCamera];
+			curFront = frontFromAngles(cameraYaw[correntCamera], cameraPitch[correntCamera]);
+			view = glm::lookAt(curPos, curPos + curFront, glm::vec3(0.0f, 1.0f, 0.0f));
+		}
+
 		glUniform1i(glGetUniformLocation(lightingShader.Program, "diffuse"), 0);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "viewPos"), camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "viewPos"), curPos.x, curPos.y, curPos.z);
 
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.direction"), -0.2f, -1.0f, -0.3f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.ambient"), 0.08f, 0.10f, 0.16f);
@@ -344,8 +393,8 @@ int main()
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[10].linear"), 0.25f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[10].quadratic"), 0.20f);
 
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.position"), camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.direction"), camera.GetFront().x, camera.GetFront().y, camera.GetFront().z);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.position"), curPos.x, curPos.y, curPos.z);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.direction"), curFront.x, curFront.y, curFront.z);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.ambient"), 0.2f, 0.2f, 0.8f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.diffuse"), 0.2f, 0.2f, 0.8f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.constant"), 1.0f);
@@ -356,7 +405,6 @@ int main()
 
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "material.shininess"), 5.0f);
 
-		glm::mat4 view = camera.GetViewMatrix();
 		GLint modelLoc = glGetUniformLocation(lightingShader.Program, "model");
 		GLint viewLoc = glGetUniformLocation(lightingShader.Program, "view");
 		GLint projLoc = glGetUniformLocation(lightingShader.Program, "projection");
@@ -383,18 +431,18 @@ int main()
 
 
 		model = glm::mat4(1.0f);
-		model = glm::rotate(model, glm::radians(rotacionPeces+30.0f), glm::vec3(1.0f, 0.0f, 0.0f)); 
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); 
+		model = glm::rotate(model, glm::radians(rotacionPeces + 30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		Peces.Draw(lightingShader);
 
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, -0.7f, 0.0f));
-		model = glm::rotate(model, glm::radians(-rotacionPeces+30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(-rotacionPeces + 30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		Peces1.Draw(lightingShader);
 
 		model = glm::mat4(1.0f);
-		model = glm::rotate(model, glm::radians(-rotacionPeces-30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(-rotacionPeces - 30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		Peces2.Draw(lightingShader);
 
@@ -452,8 +500,8 @@ int main()
 		PaddleRight.Draw(lightingShader);
 
 		// ---------------------------------------------------------
-// Barca secundaria 1
-// ---------------------------------------------------------
+		// Barca secundaria 1
+		// ---------------------------------------------------------
 
 		float bgAngleRad = glm::radians(-bgBoat1Angle);
 
@@ -583,7 +631,7 @@ int main()
 
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bgRightPaddle2));
 		PaddleRight.Draw(lightingShader);
-		
+
 		glm::mat4 baseMatrix = glm::mat4(1.0f);
 		baseMatrix = glm::translate(baseMatrix, glm::vec3(charPosX, charPosY, charPosZ));
 		baseMatrix = glm::rotate(baseMatrix, glm::radians(charRotY), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -625,10 +673,13 @@ int main()
 
 void DoMovement()
 {
-	if (keys[GLFW_KEY_W] || keys[GLFW_KEY_UP]) camera.ProcessKeyboard(FORWARD, deltaTime);
-	if (keys[GLFW_KEY_S] || keys[GLFW_KEY_DOWN]) camera.ProcessKeyboard(BACKWARD, deltaTime);
-	if (keys[GLFW_KEY_A] || keys[GLFW_KEY_LEFT]) camera.ProcessKeyboard(LEFT, deltaTime);
-	if (keys[GLFW_KEY_D] || keys[GLFW_KEY_RIGHT]) camera.ProcessKeyboard(RIGHT, deltaTime);
+	// WASD solo mueve la camara original (libre)
+	if (useFreeCamera) {
+		if (keys[GLFW_KEY_W] || keys[GLFW_KEY_UP]) camera.ProcessKeyboard(FORWARD, deltaTime);
+		if (keys[GLFW_KEY_S] || keys[GLFW_KEY_DOWN]) camera.ProcessKeyboard(BACKWARD, deltaTime);
+		if (keys[GLFW_KEY_A] || keys[GLFW_KEY_LEFT]) camera.ProcessKeyboard(LEFT, deltaTime);
+		if (keys[GLFW_KEY_D] || keys[GLFW_KEY_RIGHT]) camera.ProcessKeyboard(RIGHT, deltaTime);
+	}
 
 	// Ajuste manual de la pose (grados por frame)
 	if (keys[GLFW_KEY_2]) leftArmRot -= 0.5f;
@@ -649,8 +700,8 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 	// Tecla F: guardar keyframe con la pose actual
 	if (key == GLFW_KEY_F && action == GLFW_PRESS) saveFrame();
 
-	// Tecla 1 o L: reproducir la reverencia
-	if ((key == GLFW_KEY_1 || key == GLFW_KEY_L) && action == GLFW_PRESS) {
+	// Tecla L: reproducir la reverencia
+	if ((key == GLFW_KEY_L) && action == GLFW_PRESS) {
 		if (play == false && (FrameIndex > 1)) {
 			resetElements();
 			interpolation();
@@ -659,6 +710,15 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 			i_curr_steps = 0;
 		}
 		else play = false;
+	}
+
+	// Teclado numerico: 0 = camara libre, 1 a  4 = camaras fijas
+	if (action == GLFW_PRESS) {
+		if (key == GLFW_KEY_0) { useFreeCamera = true; }
+		if (key == GLFW_KEY_1) { useFreeCamera = false; correntCamera = 0; }
+		if (key == GLFW_KEY_2) { useFreeCamera = false; correntCamera = 1; }
+		if (key == GLFW_KEY_3) { useFreeCamera = false; correntCamera = 2; }
+		if (key == GLFW_KEY_4) { useFreeCamera = false; correntCamera = 3; }
 	}
 }
 
@@ -707,5 +767,18 @@ void MouseCallback(GLFWwindow* window, double xPos, double yPos) {
 	GLfloat yOffset = (GLfloat)(lastY - yPos);
 	lastX = (GLfloat)xPos;
 	lastY = (GLfloat)yPos;
-	camera.ProcessMouseMovement(xOffset, yOffset);
+
+	if (useFreeCamera) {
+		// Camara libre: el mouse usa su propia logica
+		camera.ProcessMouseMovement(xOffset, yOffset);
+	}
+	else {
+		// Camaras fijas: el mouse solo cambia el angulo de mira de la camara activa
+		cameraYaw[correntCamera] += xOffset * cameraSensitivity;
+		cameraPitch[correntCamera] += yOffset * cameraSensitivity;
+
+		// Evita dar la vuelta completa por arriba o por abajo
+		if (cameraPitch[correntCamera] > 89.0f) cameraPitch[correntCamera] = 89.0f;
+		if (cameraPitch[correntCamera] < -89.0f) cameraPitch[correntCamera] = -89.0f;
+	}
 }
