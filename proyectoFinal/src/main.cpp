@@ -162,6 +162,8 @@ int main()
 	Model Fuente((char*)"assets/modelos/fuente.obj");
 	Model Pasto((char*)"assets/modelos/pasto.obj");
 	Model Peces((char*)"assets/modelos/peces.obj");
+	Model Peces1((char*)"assets/modelos/peces1.obj");
+	Model Peces2((char*)"assets/modelos/peces2.obj");
 	Model Monumento((char*)"assets/modelos/monumento.obj");
 	Model Head((char*)"assets/modelos/head.obj");
 	Model Torso((char*)"assets/modelos/torso.obj");
@@ -376,7 +378,22 @@ int main()
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Pasto.Draw(lightingShader);
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Camino.Draw(lightingShader);
 
-		model = glm::mat4(1.0f); model = glm::rotate(model, glm::radians(rotacionPeces), glm::vec3(1.0f, 0.0f, 0.0f)); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Peces.Draw(lightingShader);
+
+		model = glm::mat4(1.0f);
+		model = glm::rotate(model, glm::radians(rotacionPeces+30.0f), glm::vec3(1.0f, 0.0f, 0.0f)); 
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); 
+		Peces.Draw(lightingShader);
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, -0.7f, 0.0f));
+		model = glm::rotate(model, glm::radians(-rotacionPeces+30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Peces1.Draw(lightingShader);
+
+		model = glm::mat4(1.0f);
+		model = glm::rotate(model, glm::radians(-rotacionPeces-30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Peces2.Draw(lightingShader);
 
 		glm::vec3 boatPosition = glm::mix(glm::vec3(19.0f, 0.5f, -3.8f), glm::vec3(9.5f, 0.5f, -1.9f), boatT);
 		glm::vec3 boatDirection = glm::normalize(glm::vec3(9.5f, 0.5f, -1.9f) - glm::vec3(19.0f, 0.5f, -3.8f));
@@ -395,10 +412,6 @@ int main()
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		Boat.Draw(lightingShader);
 
-		// -------------------------------------------------------------------------
-		// --- PERSONAJE: jerarquia con pivotes medidos, rotacion sobre Z ---
-		// Los .obj ya estan en coordenadas de la escena; la posicion base es 0.
-		// -------------------------------------------------------------------------
 		glm::mat4 baseMatrix = glm::mat4(1.0f);
 		baseMatrix = glm::translate(baseMatrix, glm::vec3(charPosX, charPosY, charPosZ));
 		baseMatrix = glm::rotate(baseMatrix, glm::radians(charRotY), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -478,7 +491,8 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 }
 
 void Animation() {
-	rotacionPeces += 90.0f * deltaTime; if (rotacionPeces >= 360.0f) rotacionPeces -= 360.0f;
+	rotacionPeces += 120.0f * deltaTime; if (rotacionPeces >= 360.0f) rotacionPeces -= 360.0f;
+
 	if (boatMoving) { boatT += 0.08f * deltaTime; if (boatT >= 1.0f) { boatT = 1.0f; boatMoving = false; } }
 	bgBoat1Angle += 12.0f * deltaTime; if (bgBoat1Angle >= 360.0f) bgBoat1Angle -= 360.0f;
 	bgBoat2Angle += 10.0f * deltaTime;
