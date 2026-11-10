@@ -135,6 +135,9 @@ int main()
 	Model Muelles((char*)"assets/modelos/muelles.obj");
 	Model SK((char*)"assets/modelos/SK.obj");
 	Model Boat((char*)"assets/modelos/boat.obj");
+	Model BodyBoat((char*)"assets/modelos/BodyBoat.obj");
+	Model PaddleLeft((char*)"assets/modelos/PaddleLeft.obj");
+	Model PaddleRight((char*)"assets/modelos/PaddleRight.obj");
 	Model Velas((char*)"assets/modelos/velas.obj");
 	Model Velas2((char*)"assets/modelos/velas2.obj");
 	Model Fuente((char*)"assets/modelos/fuente.obj");
@@ -355,25 +358,191 @@ int main()
 
 		model = glm::mat4(1.0f); model = glm::rotate(model, glm::radians(rotacionPeces), glm::vec3(1.0f, 0.0f, 0.0f)); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Peces.Draw(lightingShader);
 
+		// ---------------------------------------------------------
+		// Barca principal con remos animados
+		// ---------------------------------------------------------
+
 		glm::vec3 boatPosition = glm::mix(glm::vec3(19.0f, 0.5f, -3.8f), glm::vec3(9.5f, 0.5f, -1.9f), boatT);
 		glm::vec3 boatDirection = glm::normalize(glm::vec3(9.5f, 0.5f, -1.9f) - glm::vec3(19.0f, 0.5f, -3.8f));
+
 		boatPosition += glm::vec3(-boatDirection.z, 0.0f, boatDirection.x) * (sin(boatT * glm::pi<float>() * 4.0f) * 0.30f);
-		model = glm::mat4(1.0f); model = glm::translate(model, boatPosition); model = glm::rotate(model, glm::radians(225.0f + sin(boatT * glm::pi<float>() * 4.0f) * 4.0f), glm::vec3(0.0f, 1.0f, 0.0f)); model = glm::scale(model, glm::vec3(0.25f)); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Boat.Draw(lightingShader);
+
+		// Matriz base: conserva exactamente el recorrido, giro y escala originales
+		glm::mat4 boatBase = glm::mat4(1.0f);
+		boatBase = glm::translate(boatBase, boatPosition);
+		boatBase = glm::rotate(boatBase, glm::radians(225.0f + sin(boatT * glm::pi<float>() * 4.0f) * 4.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		boatBase = glm::scale(boatBase, glm::vec3(0.25f));
+
+		// Cuerpo de la barca
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(boatBase));
+		BodyBoat.Draw(lightingShader);
+
+		// Movimiento de los remos
+		// 4 ciclos durante todo el recorrido y vuelve a 0 al terminar
+		float paddleAngle = sin(boatT * glm::pi<float>() * 10.0f) * 20.0f;
+
+		// ---------------------------------------------------------
+		// Remo izquierdo
+		// Pivote calculado directamente desde boat.obj original
+		// ---------------------------------------------------------
+
+		glm::vec3 pivotLeft(0.68804f, 0.69021f, -0.97946f);
+
+		glm::mat4 leftPaddleMatrix = boatBase;
+		leftPaddleMatrix = glm::translate(leftPaddleMatrix, pivotLeft);
+		leftPaddleMatrix = glm::rotate(leftPaddleMatrix, glm::radians(paddleAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+		leftPaddleMatrix = glm::translate(leftPaddleMatrix, -pivotLeft);
+
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(leftPaddleMatrix));
+		PaddleLeft.Draw(lightingShader);
+
+		// ---------------------------------------------------------
+		// Remo derecho
+		// Pivote calculado directamente desde boat.obj original
+		// ---------------------------------------------------------
+
+		glm::vec3 pivotRight(-0.85048f, 0.27549f, 0.55167f);
+
+		glm::mat4 rightPaddleMatrix = boatBase;
+		rightPaddleMatrix = glm::translate(rightPaddleMatrix, pivotRight);
+		rightPaddleMatrix = glm::rotate(rightPaddleMatrix, glm::radians(-paddleAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+		rightPaddleMatrix = glm::translate(rightPaddleMatrix, -pivotRight);
+
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(rightPaddleMatrix));
+		PaddleRight.Draw(lightingShader);
+
+		// ---------------------------------------------------------
+// Barca secundaria 1
+// ---------------------------------------------------------
 
 		float bgAngleRad = glm::radians(-bgBoat1Angle);
-		model = glm::mat4(1.0f); model = glm::translate(model, glm::vec3(cos(bgAngleRad) * 18.0f, 0.5f, sin(bgAngleRad) * 12.0f)); model = glm::rotate(model, glm::radians(glm::degrees(atan2(-sin(bgAngleRad) * 18.0f, cos(bgAngleRad) * 12.0f)) - 56.3f + 180.0f), glm::vec3(0.0f, 1.0f, 0.0f)); model = glm::scale(model, glm::vec3(0.25f)); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Boat.Draw(lightingShader);
+
+		glm::mat4 bgBoatBase1 = glm::mat4(1.0f);
+		bgBoatBase1 = glm::translate(bgBoatBase1, glm::vec3(
+			cos(bgAngleRad) * 18.0f,
+			0.5f,
+			sin(bgAngleRad) * 12.0f
+		));
+
+		bgBoatBase1 = glm::rotate(
+			bgBoatBase1,
+			glm::radians(
+				glm::degrees(
+					atan2(
+						-sin(bgAngleRad) * 18.0f,
+						cos(bgAngleRad) * 12.0f
+					)
+				) - 56.3f + 180.0f
+			),
+			glm::vec3(0.0f, 1.0f, 0.0f)
+		);
+
+		bgBoatBase1 = glm::scale(bgBoatBase1, glm::vec3(0.25f));
+
+		// Cuerpo
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bgBoatBase1));
+		BodyBoat.Draw(lightingShader);
+
+		// Movimiento de remos
+		float bgPaddleAngle1 =
+			sin(glm::radians(bgBoat1Angle * 5.0f)) * 20.0f;
+
+		// Remo izquierdo
+		glm::vec3 bgPivotLeft1(0.68804f, 0.69021f, -0.97946f);
+
+		glm::mat4 bgLeftPaddle1 = bgBoatBase1;
+		bgLeftPaddle1 = glm::translate(bgLeftPaddle1, bgPivotLeft1);
+		bgLeftPaddle1 = glm::rotate(
+			bgLeftPaddle1,
+			glm::radians(bgPaddleAngle1),
+			glm::vec3(1.0f, 0.0f, 0.0f)
+		);
+		bgLeftPaddle1 = glm::translate(bgLeftPaddle1, -bgPivotLeft1);
+
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bgLeftPaddle1));
+		PaddleLeft.Draw(lightingShader);
+
+		// Remo derecho
+		glm::vec3 bgPivotRight1(-0.85048f, 0.27549f, 0.55167f);
+
+		glm::mat4 bgRightPaddle1 = bgBoatBase1;
+		bgRightPaddle1 = glm::translate(bgRightPaddle1, bgPivotRight1);
+		bgRightPaddle1 = glm::rotate(
+			bgRightPaddle1,
+			glm::radians(-bgPaddleAngle1),
+			glm::vec3(1.0f, 0.0f, 0.0f)
+		);
+		bgRightPaddle1 = glm::translate(bgRightPaddle1, -bgPivotRight1);
+
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bgRightPaddle1));
+		PaddleRight.Draw(lightingShader);
+
+
+		// ---------------------------------------------------------
+		// Barca secundaria 2
+		// ---------------------------------------------------------
 
 		float bgAngleRad2 = glm::radians(bgBoat2Angle);
 
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(cos(bgAngleRad2) * 15.0f, 0.5f, sin(bgAngleRad2) * 10.0f));
-		model = glm::rotate(model, glm::radians(glm::degrees(atan2(sin(bgAngleRad2) * 15.0f, -cos(bgAngleRad2) * 10.0f)) - 56.3f + 180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.25f));
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Boat.Draw(lightingShader);
+		glm::mat4 bgBoatBase2 = glm::mat4(1.0f);
+		bgBoatBase2 = glm::translate(bgBoatBase2, glm::vec3(
+			cos(bgAngleRad2) * 15.0f,
+			0.5f,
+			sin(bgAngleRad2) * 10.0f
+		));
 
-		// -------------------------------------------------------------------------
-		glm::vec3 pivotTorso(0.0f, 1.0f, 0.0f);
+		bgBoatBase2 = glm::rotate(
+			bgBoatBase2,
+			glm::radians(
+				glm::degrees(
+					atan2(
+						sin(bgAngleRad2) * 15.0f,
+						-cos(bgAngleRad2) * 10.0f
+					)
+				) - 56.3f + 180.0f
+			),
+			glm::vec3(0.0f, 1.0f, 0.0f)
+		);
+
+		bgBoatBase2 = glm::scale(bgBoatBase2, glm::vec3(0.25f));
+
+		// Cuerpo
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bgBoatBase2));
+		BodyBoat.Draw(lightingShader);
+
+		// Movimiento de remos
+		float bgPaddleAngle2 =
+			sin(glm::radians(bgBoat2Angle * 5.0f)) * 20.0f;
+
+		// Remo izquierdo
+		glm::vec3 bgPivotLeft2(0.68804f, 0.69021f, -0.97946f);
+
+		glm::mat4 bgLeftPaddle2 = bgBoatBase2;
+		bgLeftPaddle2 = glm::translate(bgLeftPaddle2, bgPivotLeft2);
+		bgLeftPaddle2 = glm::rotate(
+			bgLeftPaddle2,
+			glm::radians(bgPaddleAngle2),
+			glm::vec3(1.0f, 0.0f, 0.0f)
+		);
+		bgLeftPaddle2 = glm::translate(bgLeftPaddle2, -bgPivotLeft2);
+
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bgLeftPaddle2));
+		PaddleLeft.Draw(lightingShader);
+
+		// Remo derecho
+		glm::vec3 bgPivotRight2(-0.85048f, 0.27549f, 0.55167f);
+
+		glm::mat4 bgRightPaddle2 = bgBoatBase2;
+		bgRightPaddle2 = glm::translate(bgRightPaddle2, bgPivotRight2);
+		bgRightPaddle2 = glm::rotate(
+			bgRightPaddle2,
+			glm::radians(-bgPaddleAngle2),
+			glm::vec3(1.0f, 0.0f, 0.0f)
+		);
+		bgRightPaddle2 = glm::translate(bgRightPaddle2, -bgPivotRight2);
+
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bgRightPaddle2));
+		PaddleRight.Draw(lightingShader);
 		glm::vec3 pivotHead(0.0f, 1.6f, 0.0f);
 		glm::vec3 pivotLArm(0.3f, 1.4f, 0.0f);
 		glm::vec3 pivotRArm(-0.3f, 1.4f, 0.0f);
