@@ -71,6 +71,7 @@ const float cameraSensitivity = 0.1f;
 
 int correntCamera = 0;        // indice de la camara fija activa
 bool useFreeCamera = true;    // true = camara original libre
+bool showInfoPanel = false;
 
 float rotacionPeces = 0.0f;
 float boatT = 0.0f;
@@ -183,6 +184,7 @@ int main()
 	}
 
 	Shader lightingShader("assets/shader/lighting.vs", "assets/shader/lighting.frag");
+	Shader overlayShader("assets/shader/overlay.vs", "assets/shader/overlay.frag");
 
 	Model Isla((char*)"assets/modelos/Isla.obj");
 	Model Casas((char*)"assets/modelos/casas.obj");
@@ -211,6 +213,141 @@ int main()
 	Model LeftLeg((char*)"assets/modelos/left_Leg.obj");
 	Model RightLeg((char*)"assets/modelos/right_Leg.obj");
 	Model Camino((char*)"assets/modelos/caminos.obj");
+
+	// Cuadro informativo - Camara 1
+	GLuint infoTexture = SOIL_load_OGL_texture("assets/texturas/info_camara1.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
+	GLuint hintInfoTexture = SOIL_load_OGL_texture("assets/texturas/hint_info.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
+	GLuint hintFreeTexture = SOIL_load_OGL_texture("assets/texturas/hint_free.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
+	GLuint hintAnimationTexture = SOIL_load_OGL_texture("assets/texturas/hint_animation.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
+	GLuint infoTexture2 = SOIL_load_OGL_texture("assets/texturas/info_camara2.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
+	GLuint hintInfoTexture2 = SOIL_load_OGL_texture("assets/texturas/hint_info_cam2.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
+	GLuint infoTexture3 = SOIL_load_OGL_texture("assets/texturas/info_camara3.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
+	GLuint hintInfoTexture3 = SOIL_load_OGL_texture("assets/texturas/hint_info_cam3.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
+	GLuint infoTexture4 = SOIL_load_OGL_texture("assets/texturas/info_camara4.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
+	GLuint hintInfoTexture4 = SOIL_load_OGL_texture("assets/texturas/hint_info_cam4.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
+	GLuint hintAnimationTexture4 = SOIL_load_OGL_texture("assets/texturas/hint_animation_cam4.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
+
+	if (infoTexture == 0)
+		std::cout << "ERROR: No se pudo cargar info_camara1.png" << std::endl;
+	if (hintInfoTexture == 0)
+		std::cout << "ERROR: No se pudo cargar hint_info.png" << std::endl;
+	if (hintFreeTexture == 0)
+		std::cout << "ERROR: No se pudo cargar hint_free.png" << std::endl;
+	if (hintAnimationTexture == 0)
+		std::cout << "ERROR: No se pudo cargar hint_animation.png" << std::endl;
+	if (infoTexture2 == 0)
+		std::cout << "ERROR: No se pudo cargar info_camara2.png" << std::endl;
+	if (hintInfoTexture2 == 0)
+		std::cout << "ERROR: No se pudo cargar hint_info_cam2.png" << std::endl;
+	if (infoTexture3 == 0)
+		std::cout << "ERROR: No se pudo cargar info_camara3.png" << std::endl;
+	if (hintInfoTexture3 == 0)
+		std::cout << "ERROR: No se pudo cargar hint_info_cam3.png" << std::endl;
+	if (infoTexture4 == 0)
+		std::cout << "ERROR: No se pudo cargar info_camara4.png" << std::endl;
+	if (hintInfoTexture4 == 0)
+		std::cout << "ERROR: No se pudo cargar hint_info_cam4.png" << std::endl;
+	if (hintAnimationTexture4 == 0)
+		std::cout << "ERROR: No se pudo cargar hint_animation_cam4.png" << std::endl;
+
+	glBindTexture(GL_TEXTURE_2D, infoTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	float overlayVertices[] = {
+		// Posicion          // Textura
+		-0.90f, -0.90f,     0.0f, 0.0f,
+		 0.90f, -0.90f,     1.0f, 0.0f,
+		 0.90f, -0.25f,     1.0f, 1.0f,
+		-0.90f, -0.90f,     0.0f, 0.0f,
+		 0.90f, -0.25f,     1.0f, 1.0f,
+		-0.90f, -0.25f,     0.0f, 1.0f
+	};
+
+	GLuint overlayVAO, overlayVBO;
+	glGenVertexArrays(1, &overlayVAO);
+	glGenBuffers(1, &overlayVBO);
+	glBindVertexArray(overlayVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, overlayVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(overlayVertices), overlayVertices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	glBindVertexArray(0);
+
+	// Aviso pequeño: informacion cultural
+	float hintInfoVertices[] = {
+		 0.07f, -0.94f,   0.0f, 0.0f,
+		 0.94f, -0.94f,   1.0f, 0.0f,
+		 0.94f, -0.61f,   1.0f, 1.0f,
+		 0.07f, -0.94f,   0.0f, 0.0f,
+		 0.94f, -0.61f,   1.0f, 1.0f,
+		 0.07f, -0.61f,   0.0f, 1.0f
+	};
+
+	GLuint hintInfoVAO, hintInfoVBO;
+	glGenVertexArrays(1, &hintInfoVAO);
+	glGenBuffers(1, &hintInfoVBO);
+	glBindVertexArray(hintInfoVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, hintInfoVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(hintInfoVertices), hintInfoVertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	glBindVertexArray(0);
+
+	// Aviso pequeño: exploracion libre
+	float hintFreeVertices[] = {
+		-0.30f, -0.94f,   0.0f, 0.0f,
+		 0.94f, -0.94f,   1.0f, 0.0f,
+		 0.94f, -0.64f,   1.0f, 1.0f,
+		-0.30f, -0.94f,   0.0f, 0.0f,
+		 0.94f, -0.64f,   1.0f, 1.0f,
+		-0.30f, -0.64f,   0.0f, 1.0f
+	};
+
+	GLuint hintFreeVAO, hintFreeVBO;
+	glGenVertexArrays(1, &hintFreeVAO);
+	glGenBuffers(1, &hintFreeVBO);
+	glBindVertexArray(hintFreeVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, hintFreeVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(hintFreeVertices), hintFreeVertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	glBindVertexArray(0);
+
+	// Aviso: iniciar animacion de la barca
+	float hintAnimationVertices[] = {
+		-0.94f, -0.94f,   0.0f, 0.0f,
+		-0.07f, -0.94f,   1.0f, 0.0f,
+		-0.07f, -0.61f,   1.0f, 1.0f,
+		-0.94f, -0.94f,   0.0f, 0.0f,
+		-0.07f, -0.61f,   1.0f, 1.0f,
+		-0.94f, -0.61f,   0.0f, 1.0f
+	};
+
+	GLuint hintAnimationVAO, hintAnimationVBO;
+	glGenVertexArrays(1, &hintAnimationVAO);
+	glGenBuffers(1, &hintAnimationVBO);
+	glBindVertexArray(hintAnimationVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, hintAnimationVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(hintAnimationVertices), hintAnimationVertices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	glBindVertexArray(0);
+
+	overlayShader.Use();
+	glUniform1i(glGetUniformLocation(overlayShader.Program, "overlayTexture"), 0);
 
 	lightingShader.Use();
 	glUniform1i(glGetUniformLocation(lightingShader.Program, "Material.difuse"), 0);
@@ -665,6 +802,71 @@ int main()
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(rLegMatrix));
 		RightLeg.Draw(lightingShader);
 
+		glDisable(GL_DEPTH_TEST);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		overlayShader.Use();
+		glActiveTexture(GL_TEXTURE0);
+
+		if (useFreeCamera) {
+			glBindTexture(GL_TEXTURE_2D, hintFreeTexture);
+			glBindVertexArray(hintFreeVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+			glBindVertexArray(0);
+		}
+		else if (!showInfoPanel) {
+
+			// Aviso de informacion segun la camara
+			if (correntCamera == 0)
+				glBindTexture(GL_TEXTURE_2D, hintInfoTexture);
+			else if (correntCamera == 1)
+				glBindTexture(GL_TEXTURE_2D, hintInfoTexture2);
+			else if (correntCamera == 2)
+				glBindTexture(GL_TEXTURE_2D, hintInfoTexture3);
+			else if (correntCamera == 3)
+				glBindTexture(GL_TEXTURE_2D, hintInfoTexture4);
+
+			glBindVertexArray(hintInfoVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+			glBindVertexArray(0);
+
+			// Camara 1: animacion de la barca
+			if (correntCamera == 0) {
+				glBindTexture(GL_TEXTURE_2D, hintAnimationTexture);
+				glBindVertexArray(hintAnimationVAO);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+				glBindVertexArray(0);
+			}
+
+			// Camara 4: animacion del personaje
+			else if (correntCamera == 3) {
+				glBindTexture(GL_TEXTURE_2D, hintAnimationTexture4);
+				glBindVertexArray(hintAnimationVAO);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+				glBindVertexArray(0);
+			}
+		}
+		else {
+
+			// Ficha cultural segun la camara
+			if (correntCamera == 0)
+				glBindTexture(GL_TEXTURE_2D, infoTexture);
+			else if (correntCamera == 1)
+				glBindTexture(GL_TEXTURE_2D, infoTexture2);
+			else if (correntCamera == 2)
+				glBindTexture(GL_TEXTURE_2D, infoTexture3);
+			else if (correntCamera == 3)
+				glBindTexture(GL_TEXTURE_2D, infoTexture4);
+
+			glBindVertexArray(overlayVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+			glBindVertexArray(0);
+		}
+
+		glDisable(GL_BLEND);
+		glEnable(GL_DEPTH_TEST);
+
 		glfwSwapBuffers(window);
 	}
 	glfwTerminate();
@@ -712,13 +914,19 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 		else play = false;
 	}
 
-	// Teclado numerico: 0 = camara libre, 1 a  4 = camaras fijas
+	// Teclado numerico: 0 = camara libre, 1 a 4 = camaras fijas
 	if (action == GLFW_PRESS) {
-		if (key == GLFW_KEY_0) { useFreeCamera = true; }
-		if (key == GLFW_KEY_1) { useFreeCamera = false; correntCamera = 0; }
-		if (key == GLFW_KEY_2) { useFreeCamera = false; correntCamera = 1; }
-		if (key == GLFW_KEY_3) { useFreeCamera = false; correntCamera = 2; }
-		if (key == GLFW_KEY_4) { useFreeCamera = false; correntCamera = 3; }
+		if (key == GLFW_KEY_0) { useFreeCamera = true; showInfoPanel = false; }
+		if (key == GLFW_KEY_1) { useFreeCamera = false; correntCamera = 0; showInfoPanel = false; }
+		if (key == GLFW_KEY_2) { useFreeCamera = false; correntCamera = 1; showInfoPanel = false; }
+		if (key == GLFW_KEY_3) { useFreeCamera = false; correntCamera = 2; showInfoPanel = false; }
+		if (key == GLFW_KEY_4) { useFreeCamera = false; correntCamera = 3; showInfoPanel = false; }
+	}
+
+	// Tecla E: abrir/cerrar informacion cultural de las Camaras 1, 2, 3 y 4
+	if (key == GLFW_KEY_E && action == GLFW_PRESS) {
+		if (!useFreeCamera && (correntCamera == 0 || correntCamera == 1 || correntCamera == 2 || correntCamera == 3))
+			showInfoPanel = !showInfoPanel;
 	}
 }
 
