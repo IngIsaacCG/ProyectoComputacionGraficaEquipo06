@@ -339,7 +339,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Kd texturas/retrato1.png
+map_Kd ../texturas/retrato1.png
 
 newmtl Material.053
 Ns 250.000000
@@ -359,7 +359,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Kd texturas/retrato2.png
+map_Kd ../texturas/retrato2.png
 
 newmtl Material.055
 Ns 250.000000
@@ -509,7 +509,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Kd texturas/papel1.png
+map_Kd ../texturas/papel1.png
 
 newmtl Material.071
 Ns 250.000000
@@ -519,7 +519,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Kd texturas/papel3.png
+map_Kd ../texturas/papel1.png
 
 newmtl Material.072
 Ns 250.000000
@@ -529,7 +529,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Kd texturas/papel2.png
+map_Kd ../texturas/papel7.png
 
 newmtl Material.073
 Ns 250.000000
@@ -539,4 +539,4 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Kd texturas/papel4.png
+map_Kd ../texturas/papel4.png
