@@ -144,6 +144,8 @@
     <None Include="assets\shader\lighting.vs" />
     <None Include="assets\shader\modelLoading.frag" />
     <None Include="assets\shader\modelLoading.vs" />
+    <None Include="assets\shader\overlay.frag" />
+    <None Include="assets\shader\overlay.vs" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Core\Camera.h" />

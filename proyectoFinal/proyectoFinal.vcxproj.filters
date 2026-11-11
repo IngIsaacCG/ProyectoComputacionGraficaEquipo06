@@ -41,6 +41,12 @@
     <None Include="assets\shader\modelLoading.vs">
       <Filter>Archivos de origen\Shaders</Filter>
     </None>
+    <None Include="assets\shader\overlay.frag">
+      <Filter>Archivos de origen\Shaders</Filter>
+    </None>
+    <None Include="assets\shader\overlay.vs">
+      <Filter>Archivos de origen\Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Core\Camera.h">
