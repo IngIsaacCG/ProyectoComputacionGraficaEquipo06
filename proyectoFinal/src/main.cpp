@@ -1,9 +1,7 @@
-/*
-
-*/
-
 #include <iostream>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 
 // GLEW
 #include <GL/glew.h>
@@ -22,156 +20,172 @@
 //Load Models
 #include "SOIL2/SOIL2.h"
 
-
 // Other includes
 #include "Graphics/Shader.h"
 #include "Core/Camera.h"
 #include "Graphics/Model.h"
 
 // Function prototypes
-void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode);
-void MouseCallback(GLFWwindow *window, double xPos, double yPos);
+void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode);
+void MouseCallback(GLFWwindow* window, double xPos, double yPos);
 void DoMovement();
 void Animation();
+
+// Funciones Keyframes
+void saveFrame(void);
+void resetElements(void);
+void interpolation(void);
 
 // Window dimensions
 const GLuint WIDTH = 800, HEIGHT = 600;
 int SCREEN_WIDTH, SCREEN_HEIGHT;
 
-// Camera
+// Camara original (libre: WASD + mouse). Tecla KP 0
 Camera camera(glm::vec3(21.292f, 1.498f, -2.335f));
-GLfloat lastX = WIDTH / 2.0;
-GLfloat lastY = HEIGHT / 2.0;
+GLfloat lastX = WIDTH / 2.0f;
+GLfloat lastY = HEIGHT / 2.0f;
 bool keys[1024];
 bool firstMouse = true;
 
-// Light attributes
-glm::vec3 lightPos(0.0f, 0.0f, 0.0f);
-bool active;
-
-// Positions of the point lights
-glm::vec3 pointLightPositions[] = {
-	glm::vec3(0.0f,2.0f, 0.0f),
-	glm::vec3(0.0f,0.0f, 0.0f),
-	glm::vec3(0.0f,0.0f,  0.0f),
-	glm::vec3(0.0f,0.0f, 0.0f)
+// Camaras fijas (teclas KP 1 a KP 4): solo giran con el mouse
+const int NUM_CAMERA = 4;
+glm::vec3 cameraPositions[NUM_CAMERA] = {
+	glm::vec3(20.95f, 1.80f, -2.58f),
+	glm::vec3(8.92f, 1.07f, -2.61f),
+	glm::vec3(2.30f, 1.07f, -2.46f),
+	glm::vec3(-1.30f, 1.64f, 0.37f)
 };
 
-float vertices[] = {
-	 -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-	   -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-	   -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-
-	   -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-		0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-		0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-		0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-	   -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-	   -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-
-	   -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-	   -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-	   -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-	   -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-	   -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-	   -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-
-		0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-		0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-		0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-
-	   -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-		0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-		0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-		0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-	   -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-	   -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-
-	   -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-		0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-		0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-		0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-	   -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-	   -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+// Punto inicial al que mira cada camara fija (solo para calcular su angulo inicial)
+glm::vec3 cameraTargets[NUM_CAMERA] = {
+	glm::vec3(0.0f, 1.5f, -2.5f),
+	glm::vec3(0.0f, 0.0f, 0.0f),
+	glm::vec3(0.0f, 0.0f, 0.0f),
+	glm::vec3(0.0f, 1.0f, -2.0f)
 };
 
+// Angulos de giro de cada camara fija (grados)
+float cameraYaw[NUM_CAMERA];
+float cameraPitch[NUM_CAMERA];
+const float cameraSensitivity = 0.1f;
 
+int correntCamera = 0;        // indice de la camara fija activa
+bool useFreeCamera = true;    // true = camara original libre
 
-glm::vec3 Light1 = glm::vec3(0);
-//Anim
-// Variables para el Pez
 float rotacionPeces = 0.0f;
-// Animacion de la barca principal
 float boatT = 0.0f;
 bool boatMoving = false;
 float bgBoat1Angle = 0.0f;
+float bgBoat2Angle = 180.0f;
 
+// Variables de animacion
+float charPosX = 0.0f, charPosY = 0.0f, charPosZ = 0.0f;
+float charRotY = 0.0f;
 
+float torsoPitch = 0.0f;
+float headRot = 0.0f;
+float leftArmRot = 0.0f, rightArmRot = 0.0f;
+float leftLegRot = 0.0f, rightLegRot = 0.0f;
 
-// Deltatime
-GLfloat deltaTime = 0.0f;	// Time between current frame and last frame
-GLfloat lastFrame = 0.0f;  	// Time of last frame
+// Pivotes articulares medidos de los .obj (coordenadas de la escena).
+// Como el eje de rotacion es Z, la coordenada Z del pivote no influye.
+const glm::vec3 pivotHip(-0.7571f, 1.3808f, -0.8875f);       // base del torso
+const glm::vec3 pivotNeck(-0.7570f, 1.4669f, -0.8877f);      // base de la cabeza
+const glm::vec3 pivotLShoulder(-0.7538f, 1.4618f, -0.8505f); // hombro izquierdo
+const glm::vec3 pivotRShoulder(-0.7538f, 1.4618f, -0.9247f); // hombro derecho
+const glm::vec3 pivotLHip(-0.7586f, 1.3808f, -0.8761f);      // cadera izquierda
+const glm::vec3 pivotRHip(-0.7587f, 1.3808f, -0.8991f);      // cadera derecha
+
+// Rota una parte alrededor de su articulacion sobre el eje Z:
+// M = P * T(p) * Rz(angulo) * T(-p)
+static glm::mat4 rotAround(const glm::mat4& parent, const glm::vec3& pivot, float degrees) {
+	glm::mat4 m = glm::translate(parent, pivot);
+	m = glm::rotate(m, glm::radians(degrees), glm::vec3(0.0f, 0.0f, 1.0f));
+	m = glm::translate(m, -pivot);
+	return m;
+}
+
+// Convierte yaw y pitch (grados) en un vector de direccion de vista
+static glm::vec3 frontFromAngles(float yawDeg, float pitchDeg) {
+	glm::vec3 f;
+	f.x = cos(glm::radians(yawDeg)) * cos(glm::radians(pitchDeg));
+	f.y = sin(glm::radians(pitchDeg));
+	f.z = sin(glm::radians(yawDeg)) * cos(glm::radians(pitchDeg));
+	return glm::normalize(f);
+}
+
+typedef struct _frame {
+	float charPosX, charPosY, charPosZ, charRotY;
+	float incX, incY, incZ, charRotYInc;
+
+	float torsoPitch, torsoPitchInc;
+	float headRot, headRotInc;
+	float leftArmRot, leftArmRotInc, rightArmRot, rightArmRotInc;
+	float leftLegRot, leftLegRotInc, rightLegRot, rightLegRotInc;
+} FRAME;
+
+#define MAX_FRAMES 10
+FRAME KeyFrame[MAX_FRAMES];
+int FrameIndex = 0;
+bool play = false;
+int playIndex = 0;
+int i_max_steps = 90;
+int i_curr_steps = 0;
+
+void saveFrame(void) {
+	if (FrameIndex >= MAX_FRAMES) return;
+	KeyFrame[FrameIndex] = { charPosX, charPosY, charPosZ, charRotY, 0,0,0,0, torsoPitch, 0, headRot, 0, leftArmRot, 0, rightArmRot, 0, leftLegRot, 0, rightLegRot, 0 };
+	printf("Frame guardado %d\n", FrameIndex);
+	FrameIndex++;
+}
+
+void resetElements(void) {
+	charPosX = KeyFrame[0].charPosX; charPosY = KeyFrame[0].charPosY; charPosZ = KeyFrame[0].charPosZ;
+	charRotY = KeyFrame[0].charRotY; torsoPitch = KeyFrame[0].torsoPitch; headRot = KeyFrame[0].headRot;
+	leftArmRot = KeyFrame[0].leftArmRot; rightArmRot = KeyFrame[0].rightArmRot;
+	leftLegRot = KeyFrame[0].leftLegRot; rightLegRot = KeyFrame[0].rightLegRot;
+}
+
+void interpolation(void) {
+	KeyFrame[playIndex].incX = (KeyFrame[playIndex + 1].charPosX - KeyFrame[playIndex].charPosX) / i_max_steps;
+	KeyFrame[playIndex].incY = (KeyFrame[playIndex + 1].charPosY - KeyFrame[playIndex].charPosY) / i_max_steps;
+	KeyFrame[playIndex].incZ = (KeyFrame[playIndex + 1].charPosZ - KeyFrame[playIndex].charPosZ) / i_max_steps;
+	KeyFrame[playIndex].charRotYInc = (KeyFrame[playIndex + 1].charRotY - KeyFrame[playIndex].charRotY) / i_max_steps;
+	KeyFrame[playIndex].torsoPitchInc = (KeyFrame[playIndex + 1].torsoPitch - KeyFrame[playIndex].torsoPitch) / i_max_steps;
+	KeyFrame[playIndex].headRotInc = (KeyFrame[playIndex + 1].headRot - KeyFrame[playIndex].headRot) / i_max_steps;
+	KeyFrame[playIndex].leftArmRotInc = (KeyFrame[playIndex + 1].leftArmRot - KeyFrame[playIndex].leftArmRot) / i_max_steps;
+	KeyFrame[playIndex].rightArmRotInc = (KeyFrame[playIndex + 1].rightArmRot - KeyFrame[playIndex].rightArmRot) / i_max_steps;
+	KeyFrame[playIndex].leftLegRotInc = (KeyFrame[playIndex + 1].leftLegRot - KeyFrame[playIndex].leftLegRot) / i_max_steps;
+	KeyFrame[playIndex].rightLegRotInc = (KeyFrame[playIndex + 1].rightLegRot - KeyFrame[playIndex].rightLegRot) / i_max_steps;
+}
+
+GLfloat deltaTime = 0.0f;
+GLfloat lastFrame = 0.0f;
 
 int main()
 {
-	// Init GLFW
 	glfwInit();
-	// Set all the required options for GLFW
-	/*glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);*/
-
-	// Create a GLFWwindow object that we can use for GLFW's functions
 	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Proyecto final", nullptr, nullptr);
-
-	if (nullptr == window)
-	{
-		std::cout << "Failed to create GLFW window" << std::endl;
-		glfwTerminate();
-
-		return EXIT_FAILURE;
-	}
-
+	if (nullptr == window) { glfwTerminate(); return EXIT_FAILURE; }
 	glfwMakeContextCurrent(window);
-
 	glfwGetFramebufferSize(window, &SCREEN_WIDTH, &SCREEN_HEIGHT);
-
-	// Set the required callback functions
 	glfwSetKeyCallback(window, KeyCallback);
 	glfwSetCursorPosCallback(window, MouseCallback);
-
-	// GLFW Options
-	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-	// Set this to true so GLEW knows to use a modern approach to retrieving function pointers and extensions
 	glewExperimental = GL_TRUE;
-	// Initialize GLEW to setup the OpenGL Function pointers
-	if (GLEW_OK != glewInit())
-	{
-		std::cout << "Failed to initialize GLEW" << std::endl;
-		return EXIT_FAILURE;
-	}
-
-	// Define the viewport dimensions
+	if (GLEW_OK != glewInit()) return EXIT_FAILURE;
 	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-
+	// Angulos iniciales de cada camara fija a partir de su punto de mira
+	for (int i = 0; i < NUM_CAMERA; i++) {
+		glm::vec3 d = glm::normalize(cameraTargets[i] - cameraPositions[i]);
+		cameraPitch[i] = glm::degrees(asin(d.y));
+		cameraYaw[i] = glm::degrees(atan2(d.z, d.x));
+	}
 
 	Shader lightingShader("assets/shader/lighting.vs", "assets/shader/lighting.frag");
-	Shader lampShader("assets/shader/lamp.vs", "assets/shader/lamp.frag");
-	
-	//models
+
 	Model Isla((char*)"assets/modelos/Isla.obj");
 	Model Casas((char*)"assets/modelos/casas.obj");
-	/*Model Camino((char*)"assets/modelos/camino.obj");*/
 	Model Cementerio((char*)"assets/modelos/cementerio.obj");
 	Model Panteon((char*)"assets/modelos/panteonM.obj");
 	Model EntradaPanteon((char*)"assets/modelos/EntradaPanteon.obj");
@@ -179,10 +193,16 @@ int main()
 	Model Muelles((char*)"assets/modelos/muelles.obj");
 	Model SK((char*)"assets/modelos/SK.obj");
 	Model Boat((char*)"assets/modelos/boat.obj");
+	Model BodyBoat((char*)"assets/modelos/BodyBoat.obj");
+	Model PaddleLeft((char*)"assets/modelos/PaddleLeft.obj");
+	Model PaddleRight((char*)"assets/modelos/PaddleRight.obj");
 	Model Velas((char*)"assets/modelos/velas.obj");
+	Model Velas2((char*)"assets/modelos/velas2.obj");
 	Model Fuente((char*)"assets/modelos/fuente.obj");
 	Model Pasto((char*)"assets/modelos/pasto.obj");
 	Model Peces((char*)"assets/modelos/peces.obj");
+	Model Peces1((char*)"assets/modelos/peces1.obj");
+	Model Peces2((char*)"assets/modelos/peces2.obj");
 	Model Monumento((char*)"assets/modelos/monumento.obj");
 	Model Head((char*)"assets/modelos/head.obj");
 	Model Torso((char*)"assets/modelos/torso.obj");
@@ -190,496 +210,575 @@ int main()
 	Model RightArm((char*)"assets/modelos/right_Arm.obj");
 	Model LeftLeg((char*)"assets/modelos/left_Leg.obj");
 	Model RightLeg((char*)"assets/modelos/right_Leg.obj");
+	Model Camino((char*)"assets/modelos/caminos.obj");
 
-	// First, set the container's VAO (and VBO)
-	GLuint VBO, VAO;
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-	glBindVertexArray(VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	// Position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
-	glEnableVertexAttribArray(0);
-	// normal attribute
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	// Set texture units
 	lightingShader.Use();
 	glUniform1i(glGetUniformLocation(lightingShader.Program, "Material.difuse"), 0);
 	glUniform1i(glGetUniformLocation(lightingShader.Program, "Material.specular"), 1);
-
 	glm::mat4 projection = glm::perspective(camera.GetZoom(), (GLfloat)SCREEN_WIDTH / (GLfloat)SCREEN_HEIGHT, 0.1f, 100.0f);
 
-	// Game loop
+	// 0. De pie
+	KeyFrame[0] = { 0.0f, 0.0f, 0.0f, 0.0f,  0.0f, 0.0f, 0.0f, 0.0f,
+					0.0f, 0.0f,    // torsoPitch
+					0.0f, 0.0f,    // headRot
+					0.0f, 0.0f,    // leftArmRot
+					0.0f, 0.0f,    // rightArmRot
+					0.0f, 0.0f,    // leftLegRot
+					0.0f, 0.0f };  // rightLegRot
+
+	// 1. Manos juntas al frente, cabeza ligeramente baja
+	KeyFrame[1] = KeyFrame[0];
+	KeyFrame[1].leftArmRot = -15.0f;
+	KeyFrame[1].rightArmRot = -15.0f;
+	KeyFrame[1].headRot = 5.0f;
+
+	// 2. Reverencia: torso inclinado 30 grados hacia adelante
+	KeyFrame[2] = KeyFrame[1];
+	KeyFrame[2].torsoPitch = 30.0f;
+	KeyFrame[2].headRot = 10.0f;
+
+	// 3. Regreso a la postura de manos juntas
+	KeyFrame[3] = KeyFrame[1];
+
+	// 4. Reposo
+	KeyFrame[4] = KeyFrame[0];
+
+	FrameIndex = 5;
+
 	while (!glfwWindowShouldClose(window))
 	{
-
-		// Calculate deltatime of current frame
-		GLfloat currentFrame = glfwGetTime();
+		GLfloat currentFrame = (GLfloat)glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
-		// Check if any events have been activiated (key pressed, mouse moved etc.) and call corresponding response functions
 		glfwPollEvents();
 		DoMovement();
 		Animation();
 
-		// Clear the colorbuffer
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		// OpenGL options
 		glEnable(GL_DEPTH_TEST);
 
-
-		glm::mat4 modelTemp = glm::mat4(1.0f); //Temp
-
-
-
-		// Use cooresponding shader when setting uniforms/drawing objects
 		lightingShader.Use();
 
+		// Datos de la camara activa (se calculan una sola vez por frame)
+		glm::vec3 curPos;
+		glm::vec3 curFront;
+		glm::mat4 view;
+
+		if (useFreeCamera) {
+			curPos = camera.GetPosition();
+			curFront = camera.GetFront();
+			view = camera.GetViewMatrix();
+		}
+		else {
+			curPos = cameraPositions[correntCamera];
+			curFront = frontFromAngles(cameraYaw[correntCamera], cameraPitch[correntCamera]);
+			view = glm::lookAt(curPos, curPos + curFront, glm::vec3(0.0f, 1.0f, 0.0f));
+		}
+
 		glUniform1i(glGetUniformLocation(lightingShader.Program, "diffuse"), 0);
-		//glUniform1i(glGetUniformLocation(lightingShader.Program, "specular"),1);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "viewPos"), curPos.x, curPos.y, curPos.z);
 
-		GLint viewPosLoc = glGetUniformLocation(lightingShader.Program, "viewPos");
-		glUniform3f(viewPosLoc, camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
-
-
-		// Directional light
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.direction"), -0.2f, -1.0f, -0.3f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.ambient"), 0.6f, 0.6f, 0.6f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.diffuse"), 0.6f, 0.6f, 0.6f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.specular"), 0.3f, 0.3f, 0.3f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.ambient"), 0.08f, 0.10f, 0.16f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.diffuse"), 0.18f, 0.22f, 0.32f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.specular"), 0.20f, 0.24f, 0.35f);
 
+		float time = (float)glfwGetTime();
 
-		// Point light 1
-		glm::vec3 lightColor;
-		lightColor.x = abs(sin(glfwGetTime() * Light1.x));
-		lightColor.y = abs(sin(glfwGetTime() * Light1.y));
-		lightColor.z = sin(glfwGetTime() * Light1.z);
+		float flicker0 = 0.70f + 0.25f * sin(time * 2.8f) + 0.12f * sin(time * 6.1f);
+		float flicker1 = 0.72f + 0.23f * sin(time * 3.1f + 1.0f) + 0.12f * sin(time * 6.8f);
+		float flicker2 = 0.69f + 0.26f * sin(time * 2.6f + 2.0f) + 0.11f * sin(time * 6.4f);
+		float flicker3 = 0.71f + 0.24f * sin(time * 2.9f + 3.0f) + 0.12f * sin(time * 7.0f);
 
-
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].position"), pointLightPositions[0].x, pointLightPositions[0].y, pointLightPositions[0].z);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].ambient"), lightColor.x, lightColor.y, lightColor.z);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].diffuse"), lightColor.x, lightColor.y, lightColor.z);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].specular"), 1.0f, 0.2f, 0.2f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].position"), -2.4264f, 1.6475f, 0.11014f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].ambient"), 0.05f * flicker0, 0.02f * flicker0, 0.005f * flicker0);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].diffuse"), 0.80f * flicker0, 0.30f * flicker0, 0.05f * flicker0);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].specular"), 0.90f, 0.40f, 0.10f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[0].constant"), 1.0f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[0].linear"), 0.045f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[0].quadratic"), 0.075f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[0].linear"), 0.50f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[0].quadratic"), 0.75f);
 
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[1].position"), -2.4322f, 1.6560f, -0.8175f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[1].ambient"), 0.05f * flicker1, 0.02f * flicker1, 0.005f * flicker1);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[1].diffuse"), 0.80f * flicker1, 0.30f * flicker1, 0.05f * flicker1);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[1].specular"), 0.90f, 0.40f, 0.10f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[1].constant"), 1.0f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[1].linear"), 0.50f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[1].quadratic"), 0.75f);
 
-		// SpotLight
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.position"), camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.direction"), camera.GetFront().x, camera.GetFront().y, camera.GetFront().z);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[2].position"), -1.6344f, 1.5845f, -0.21061f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[2].ambient"), 0.05f * flicker2, 0.02f * flicker2, 0.005f * flicker2);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[2].diffuse"), 0.80f * flicker2, 0.30f * flicker2, 0.05f * flicker2);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[2].specular"), 0.90f, 0.40f, 0.10f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[2].constant"), 1.0f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[2].linear"), 0.50f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[2].quadratic"), 0.75f);
+
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[3].position"), -1.0226f, 1.5204f, -1.0543f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[3].ambient"), 0.05f * flicker3, 0.02f * flicker3, 0.005f * flicker3);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[3].diffuse"), 0.80f * flicker3, 0.30f * flicker3, 0.05f * flicker3);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[3].specular"), 0.90f, 0.40f, 0.10f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[3].constant"), 1.0f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[3].linear"), 0.50f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[3].quadratic"), 0.75f);
+
+		float flicker4 = 0.82f + 0.15f * sin(time * 2.1f + 0.5f) + 0.05f * sin(time * 5.0f);
+		float flicker5 = 0.84f + 0.14f * sin(time * 2.3f + 1.5f) + 0.05f * sin(time * 5.4f);
+		float flicker6 = 0.83f + 0.15f * sin(time * 2.0f + 2.5f) + 0.05f * sin(time * 4.8f);
+		float flicker7 = 0.84f + 0.14f * sin(time * 2.2f + 3.5f) + 0.05f * sin(time * 5.2f);
+
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[4].position"), 1.096f, 1.8039f, -0.45079f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[4].ambient"), 0.03f * flicker4, 0.02f * flicker4, 0.01f * flicker4);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[4].diffuse"), 0.52f * flicker4, 0.35f * flicker4, 0.14f * flicker4);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[4].specular"), 0.25f, 0.20f, 0.10f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[4].constant"), 1.0f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[4].linear"), 0.18f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[4].quadratic"), 0.10f);
+
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].position"), 1.096f, 1.8039f, -2.5193f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].ambient"), 0.05f * flicker5, 0.03f * flicker5, 0.015f * flicker5);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].diffuse"), 0.60f * flicker5, 0.40f * flicker5, 0.16f * flicker5);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].specular"), 0.25f, 0.20f, 0.10f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[5].constant"), 1.0f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[5].linear"), 0.18f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[5].quadratic"), 0.10f);
+
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[6].position"), 6.1152f, 1.8039f, -1.3698f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[6].ambient"), 0.03f * flicker6, 0.02f * flicker6, 0.01f * flicker6);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[6].diffuse"), 0.48f * flicker6, 0.32f * flicker6, 0.12f * flicker6);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[6].specular"), 0.25f, 0.20f, 0.10f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[6].constant"), 1.0f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[6].linear"), 0.20f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[6].quadratic"), 0.12f);
+
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[7].position"), 6.1348f, 1.8039f, -3.5318f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[7].ambient"), 0.03f * flicker7, 0.02f * flicker7, 0.01f * flicker7);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[7].diffuse"), 0.46f * flicker7, 0.30f * flicker7, 0.12f * flicker7);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[7].specular"), 0.25f, 0.20f, 0.10f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[7].constant"), 1.0f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[7].linear"), 0.20f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[7].quadratic"), 0.12f);
+
+		// ---------------------------------------------------------
+		// Luces del camino hacia el panteon
+		// ---------------------------------------------------------
+
+		float flicker8 = 0.72f + 0.22f * sin(time * 2.7f + 0.8f) + 0.10f * sin(time * 6.0f);
+		float flicker9 = 0.74f + 0.20f * sin(time * 3.0f + 1.7f) + 0.10f * sin(time * 6.5f);
+		float flicker10 = 0.71f + 0.23f * sin(time * 2.5f + 2.6f) + 0.10f * sin(time * 6.2f);
+
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[8].position"), 0.081311f, 1.7833f, -0.46429f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[8].ambient"), 0.035f * flicker8, 0.020f * flicker8, 0.007f * flicker8);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[8].diffuse"), 0.44f * flicker8, 0.26f * flicker8, 0.08f * flicker8);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[8].specular"), 0.20f, 0.12f, 0.05f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[8].constant"), 1.0f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[8].linear"), 0.25f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[8].quadratic"), 0.20f);
+
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[9].position"), 1.2133f, 1.6803f, -0.46429f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[9].ambient"), 0.035f * flicker9, 0.020f * flicker9, 0.007f * flicker9);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[9].diffuse"), 0.44f * flicker9, 0.26f * flicker9, 0.08f * flicker9);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[9].specular"), 0.20f, 0.12f, 0.05f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[9].constant"), 1.0f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[9].linear"), 0.25f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[9].quadratic"), 0.20f);
+
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[10].position"), 2.3211f, 1.6319f, -0.46429f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[10].ambient"), 0.035f * flicker10, 0.020f * flicker10, 0.007f * flicker10);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[10].diffuse"), 0.44f * flicker10, 0.26f * flicker10, 0.08f * flicker10);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[10].specular"), 0.20f, 0.12f, 0.05f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[10].constant"), 1.0f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[10].linear"), 0.25f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[10].quadratic"), 0.20f);
+
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.position"), curPos.x, curPos.y, curPos.z);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.direction"), curFront.x, curFront.y, curFront.z);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.ambient"), 0.2f, 0.2f, 0.8f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.diffuse"), 0.2f, 0.2f, 0.8f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.specular"), 0.0f, 0.0f, 0.0f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.constant"), 1.0f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.linear"), 0.3f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.quadratic"), 0.7f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.cutOff"), glm::cos(glm::radians(12.0f)));
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.outerCutOff"), glm::cos(glm::radians(18.0f)));
 
-
-		// Set material properties
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "material.shininess"), 5.0f);
 
-		// Create camera transformations
-		glm::mat4 view;
-		view = camera.GetViewMatrix();
-
-		// Get the uniform locations
 		GLint modelLoc = glGetUniformLocation(lightingShader.Program, "model");
 		GLint viewLoc = glGetUniformLocation(lightingShader.Program, "view");
 		GLint projLoc = glGetUniformLocation(lightingShader.Program, "projection");
-
-		// Pass the matrices to the shader
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
 
 		glm::mat4 model(1);
 
-		// Dibujar isla
+		// Entorno
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Isla.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Casas.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Cementerio.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Panteon.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); EntradaPanteon.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Iglesia.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Muelles.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); SK.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Velas.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Velas2.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Monumento.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Fuente.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Pasto.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Camino.Draw(lightingShader);
+
+
 		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Isla.Draw(lightingShader);
-
-		// Dibujar casas
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Casas.Draw(lightingShader);
-
-		// Dibujar cementerio
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Cementerio.Draw(lightingShader);
-
-		// Dibujar Panteon
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Panteon.Draw(lightingShader);
-
-		// Dibujar entrada del panteón
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		EntradaPanteon.Draw(lightingShader);
-
-		// Dibujar iglesia
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Iglesia.Draw(lightingShader);
-
-		// Dibujar muelles
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Muelles.Draw(lightingShader);
-
-		// Dibujar SK
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		SK.Draw(lightingShader);
-
-		// ------------------------------
-		// Barca principal
-		// ------------------------------
-
-		glm::vec3 boatStart(19.0f, 0.5f, -3.8f);
-		glm::vec3 boatEnd(9.5f, 0.5f, -1.9f);
-
-		// Movimiento principal entre ambos muelles
-		glm::vec3 boatPosition = glm::mix(boatStart, boatEnd, boatT);
-
-		// Direccion general del recorrido
-		glm::vec3 boatDirection = glm::normalize(boatEnd - boatStart);
-
-		// Direccion perpendicular para mover la barca
-		// ligeramente hacia los lados
-		glm::vec3 boatSide(-boatDirection.z, 0.0f, boatDirection.x);
-
-		// Movimiento lateral.
-		// Al inicio y al final queda exactamente
-		// sobre la trayectoria principal.
-		float boatSideMovement = sin(boatT * glm::pi<float>() * 4.0f) * 0.30f;
-		boatPosition += boatSide * boatSideMovement;
-
-
-		// Pequeño cambio de direccion mientras navega
-		float boatRotation = 225.0f + sin(boatT * glm::pi<float>() * 4.0f) * 4.0f;
-
-		// Transformaciones
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, boatPosition);
-		model = glm::rotate(model, glm::radians(boatRotation), glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.25f));
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Boat.Draw(lightingShader);
-
-		// ------------------------------
-		// Barca de fondo 1
-		// ------------------------------
-		float bgAngleRad = glm::radians(-bgBoat1Angle);
-
-		// Centro del recorrido
-		float bgCenterX = 0.0f;
-		float bgCenterZ = 0.0f;
-
-		// Recorrido amplio alrededor de la isla
-		float bgRadiusX = 18.0f;
-		float bgRadiusZ = 12.0f;
-
-		// Posicion de la barca
-		float bgX = bgCenterX + cos(bgAngleRad) * bgRadiusX;
-		float bgZ = bgCenterZ + sin(bgAngleRad) * bgRadiusZ;
-
-		// Direccion real de movimiento
-		float dirX = -sin(bgAngleRad) * bgRadiusX;
-		float dirZ = cos(bgAngleRad) * bgRadiusZ;
-
-		// Angulo de direccion
-		float directionAngle = glm::degrees(atan2(dirX, dirZ));
-
-		// Correccion de orientacion del modelo
-		float modelOffset = -56.3f;
-		float bgRotation = directionAngle + modelOffset + 180.0f;
-
-		// Movimiento suave por el agua
-		float balanceo =
-			sin(bgBoat1Angle * 0.12f) * 2.0f;
-
-		// Dibujar barca
-		model = glm::mat4(1.0f);
-		model = glm::translate(model,glm::vec3(bgX, 0.5f, bgZ));
-		model = glm::rotate(model,glm::radians(bgRotation),glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::scale(model,glm::vec3(0.25f));
-		glUniformMatrix4fv(modelLoc,1,GL_FALSE,glm::value_ptr(model));
-		Boat.Draw(lightingShader);
-
-		// Dibujo torso
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Torso.Draw(lightingShader);
-
-		// Dibujo cabeza
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Head.Draw(lightingShader);
-
-		// Dibujo brazo izquierdo
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		LeftArm.Draw(lightingShader);
-
-		// Dibujo brazo derecho
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		RightArm.Draw(lightingShader);
-
-		// Dibujo pierna izquierda
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		LeftLeg.Draw(lightingShader);
-
-		// Dibujo pierna derecha
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		RightLeg.Draw(lightingShader);
-
-		// Dibujar velas
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Velas.Draw(lightingShader);
-
-		// Dibujar monumento
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Monumento.Draw(lightingShader);
-
-		// Dibujar camino
-		/*model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Camino.Draw(lightingShader);*/
-
-		// Dibujar fuente
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Fuente.Draw(lightingShader);
-
-		// Dibujar pasto
-		model = glm::mat4(1.0f);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Pasto.Draw(lightingShader);
-
-		// Dibujo pez
-		model = glm::mat4(1.0f);
-		// 2. Aplica la rotación continua en el eje X (1.0f, 0.0f, 0.0f)
-		model = glm::rotate(model, glm::radians(rotacionPeces), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(rotacionPeces + 30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		Peces.Draw(lightingShader);
 
-		// Also draw the lamp object, again binding the appropriate shader
-		lampShader.Use();
-		// Get location objects for the matrices on the lamp shader (these could be different on a different shader)
-		modelLoc = glGetUniformLocation(lampShader.Program, "model");
-		viewLoc = glGetUniformLocation(lampShader.Program, "view");
-		projLoc = glGetUniformLocation(lampShader.Program, "projection");
-
-		// Set matrices
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-		model = glm::mat4(1);
-		model = glm::translate(model, lightPos);
-		model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, -0.7f, 0.0f));
+		model = glm::rotate(model, glm::radians(-rotacionPeces + 30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		// Draw the light object (using light's vertex attributes)
-		
-			model = glm::mat4(1);
-			model = glm::translate(model, pointLightPositions[0]);
-			model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
-			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-			glBindVertexArray(VAO);
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		
-		glBindVertexArray(0);
+		Peces1.Draw(lightingShader);
+
+		model = glm::mat4(1.0f);
+		model = glm::rotate(model, glm::radians(-rotacionPeces - 30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Peces2.Draw(lightingShader);
+
+		// ---------------------------------------------------------
+		// Barca principal con remos animados
+		// ---------------------------------------------------------
+
+		glm::vec3 boatPosition = glm::mix(glm::vec3(19.0f, 0.5f, -3.8f), glm::vec3(9.5f, 0.5f, -1.9f), boatT);
+		glm::vec3 boatDirection = glm::normalize(glm::vec3(9.5f, 0.5f, -1.9f) - glm::vec3(19.0f, 0.5f, -3.8f));
+
+		boatPosition += glm::vec3(-boatDirection.z, 0.0f, boatDirection.x) * (sin(boatT * glm::pi<float>() * 4.0f) * 0.30f);
+
+		// Matriz base: conserva exactamente el recorrido, giro y escala originales
+		glm::mat4 boatBase = glm::mat4(1.0f);
+		boatBase = glm::translate(boatBase, boatPosition);
+		boatBase = glm::rotate(boatBase, glm::radians(225.0f + sin(boatT * glm::pi<float>() * 4.0f) * 4.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		boatBase = glm::scale(boatBase, glm::vec3(0.25f));
+
+		// Cuerpo de la barca
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(boatBase));
+		BodyBoat.Draw(lightingShader);
+
+		// Movimiento de los remos
+		// 4 ciclos durante todo el recorrido y vuelve a 0 al terminar
+		float paddleAngle = sin(boatT * glm::pi<float>() * 10.0f) * 20.0f;
+
+		// ---------------------------------------------------------
+		// Remo izquierdo
+		// Pivote calculado directamente desde boat.obj original
+		// ---------------------------------------------------------
+
+		glm::vec3 pivotLeft(0.68804f, 0.69021f, -0.97946f);
+
+		glm::mat4 leftPaddleMatrix = boatBase;
+		leftPaddleMatrix = glm::translate(leftPaddleMatrix, pivotLeft);
+		leftPaddleMatrix = glm::rotate(leftPaddleMatrix, glm::radians(paddleAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+		leftPaddleMatrix = glm::translate(leftPaddleMatrix, -pivotLeft);
+
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(leftPaddleMatrix));
+		PaddleLeft.Draw(lightingShader);
+
+		// ---------------------------------------------------------
+		// Remo derecho
+		// Pivote calculado directamente desde boat.obj original
+		// ---------------------------------------------------------
+
+		glm::vec3 pivotRight(-0.85048f, 0.27549f, 0.55167f);
+
+		glm::mat4 rightPaddleMatrix = boatBase;
+		rightPaddleMatrix = glm::translate(rightPaddleMatrix, pivotRight);
+		rightPaddleMatrix = glm::rotate(rightPaddleMatrix, glm::radians(-paddleAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+		rightPaddleMatrix = glm::translate(rightPaddleMatrix, -pivotRight);
+
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(rightPaddleMatrix));
+		PaddleRight.Draw(lightingShader);
+
+		// ---------------------------------------------------------
+		// Barca secundaria 1
+		// ---------------------------------------------------------
+
+		float bgAngleRad = glm::radians(-bgBoat1Angle);
+
+		glm::mat4 bgBoatBase1 = glm::mat4(1.0f);
+		bgBoatBase1 = glm::translate(bgBoatBase1, glm::vec3(
+			cos(bgAngleRad) * 18.0f,
+			0.5f,
+			sin(bgAngleRad) * 12.0f
+		));
+
+		bgBoatBase1 = glm::rotate(
+			bgBoatBase1,
+			glm::radians(
+				glm::degrees(
+					atan2(
+						-sin(bgAngleRad) * 18.0f,
+						cos(bgAngleRad) * 12.0f
+					)
+				) - 56.3f + 180.0f
+			),
+			glm::vec3(0.0f, 1.0f, 0.0f)
+		);
+
+		bgBoatBase1 = glm::scale(bgBoatBase1, glm::vec3(0.25f));
+
+		// Cuerpo
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bgBoatBase1));
+		BodyBoat.Draw(lightingShader);
+
+		// Movimiento de remos
+		float bgPaddleAngle1 =
+			sin(glm::radians(bgBoat1Angle * 5.0f)) * 20.0f;
+
+		// Remo izquierdo
+		glm::vec3 bgPivotLeft1(0.68804f, 0.69021f, -0.97946f);
+
+		glm::mat4 bgLeftPaddle1 = bgBoatBase1;
+		bgLeftPaddle1 = glm::translate(bgLeftPaddle1, bgPivotLeft1);
+		bgLeftPaddle1 = glm::rotate(
+			bgLeftPaddle1,
+			glm::radians(bgPaddleAngle1),
+			glm::vec3(1.0f, 0.0f, 0.0f)
+		);
+		bgLeftPaddle1 = glm::translate(bgLeftPaddle1, -bgPivotLeft1);
+
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bgLeftPaddle1));
+		PaddleLeft.Draw(lightingShader);
+
+		// Remo derecho
+		glm::vec3 bgPivotRight1(-0.85048f, 0.27549f, 0.55167f);
+
+		glm::mat4 bgRightPaddle1 = bgBoatBase1;
+		bgRightPaddle1 = glm::translate(bgRightPaddle1, bgPivotRight1);
+		bgRightPaddle1 = glm::rotate(
+			bgRightPaddle1,
+			glm::radians(-bgPaddleAngle1),
+			glm::vec3(1.0f, 0.0f, 0.0f)
+		);
+		bgRightPaddle1 = glm::translate(bgRightPaddle1, -bgPivotRight1);
+
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bgRightPaddle1));
+		PaddleRight.Draw(lightingShader);
 
 
+		// ---------------------------------------------------------
+		// Barca secundaria 2
+		// ---------------------------------------------------------
 
-		// Swap the screen buffers
+		float bgAngleRad2 = glm::radians(bgBoat2Angle);
+
+		glm::mat4 bgBoatBase2 = glm::mat4(1.0f);
+		bgBoatBase2 = glm::translate(bgBoatBase2, glm::vec3(
+			cos(bgAngleRad2) * 15.0f,
+			0.5f,
+			sin(bgAngleRad2) * 10.0f
+		));
+
+		bgBoatBase2 = glm::rotate(
+			bgBoatBase2,
+			glm::radians(
+				glm::degrees(
+					atan2(
+						sin(bgAngleRad2) * 15.0f,
+						-cos(bgAngleRad2) * 10.0f
+					)
+				) - 56.3f + 180.0f
+			),
+			glm::vec3(0.0f, 1.0f, 0.0f)
+		);
+
+		bgBoatBase2 = glm::scale(bgBoatBase2, glm::vec3(0.25f));
+
+		// Cuerpo
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bgBoatBase2));
+		BodyBoat.Draw(lightingShader);
+
+		// Movimiento de remos
+		float bgPaddleAngle2 =
+			sin(glm::radians(bgBoat2Angle * 5.0f)) * 20.0f;
+
+		// Remo izquierdo
+		glm::vec3 bgPivotLeft2(0.68804f, 0.69021f, -0.97946f);
+
+		glm::mat4 bgLeftPaddle2 = bgBoatBase2;
+		bgLeftPaddle2 = glm::translate(bgLeftPaddle2, bgPivotLeft2);
+		bgLeftPaddle2 = glm::rotate(
+			bgLeftPaddle2,
+			glm::radians(bgPaddleAngle2),
+			glm::vec3(1.0f, 0.0f, 0.0f)
+		);
+		bgLeftPaddle2 = glm::translate(bgLeftPaddle2, -bgPivotLeft2);
+
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bgLeftPaddle2));
+		PaddleLeft.Draw(lightingShader);
+
+		// Remo derecho
+		glm::vec3 bgPivotRight2(-0.85048f, 0.27549f, 0.55167f);
+
+		glm::mat4 bgRightPaddle2 = bgBoatBase2;
+		bgRightPaddle2 = glm::translate(bgRightPaddle2, bgPivotRight2);
+		bgRightPaddle2 = glm::rotate(
+			bgRightPaddle2,
+			glm::radians(-bgPaddleAngle2),
+			glm::vec3(1.0f, 0.0f, 0.0f)
+		);
+		bgRightPaddle2 = glm::translate(bgRightPaddle2, -bgPivotRight2);
+
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bgRightPaddle2));
+		PaddleRight.Draw(lightingShader);
+
+		glm::mat4 baseMatrix = glm::mat4(1.0f);
+		baseMatrix = glm::translate(baseMatrix, glm::vec3(charPosX, charPosY, charPosZ));
+		baseMatrix = glm::rotate(baseMatrix, glm::radians(charRotY), glm::vec3(0.0f, 1.0f, 0.0f));
+
+		// TORSO: pivota en la cadera
+		glm::mat4 torsoMatrix = rotAround(baseMatrix, pivotHip, torsoPitch);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(torsoMatrix));
+		Torso.Draw(lightingShader);
+
+		// CABEZA: hija del torso, pivota en el cuello
+		glm::mat4 headMatrix = rotAround(torsoMatrix, pivotNeck, headRot);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(headMatrix));
+		Head.Draw(lightingShader);
+
+		// BRAZO IZQUIERDO: hijo del torso, pivota en el hombro izquierdo
+		glm::mat4 lArmMatrix = rotAround(torsoMatrix, pivotLShoulder, leftArmRot);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(lArmMatrix));
+		LeftArm.Draw(lightingShader);
+
+		// BRAZO DERECHO: hijo del torso, pivota en el hombro derecho
+		glm::mat4 rArmMatrix = rotAround(torsoMatrix, pivotRShoulder, rightArmRot);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(rArmMatrix));
+		RightArm.Draw(lightingShader);
+
+		// PIERNAS: no heredan la inclinacion del torso, pivotan en la cadera
+		glm::mat4 lLegMatrix = rotAround(baseMatrix, pivotLHip, leftLegRot);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(lLegMatrix));
+		LeftLeg.Draw(lightingShader);
+
+		glm::mat4 rLegMatrix = rotAround(baseMatrix, pivotRHip, rightLegRot);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(rLegMatrix));
+		RightLeg.Draw(lightingShader);
+
 		glfwSwapBuffers(window);
 	}
-
-
-	// Terminate GLFW, clearing any resources allocated by GLFW.
 	glfwTerminate();
-
-
-
 	return 0;
 }
 
-// Moves/alters the camera positions based on user input
 void DoMovement()
 {
-
-	// Camera controls
-	if (keys[GLFW_KEY_W] || keys[GLFW_KEY_UP])
-	{
-		camera.ProcessKeyboard(FORWARD, deltaTime);
-
+	// WASD solo mueve la camara original (libre)
+	if (useFreeCamera) {
+		if (keys[GLFW_KEY_W] || keys[GLFW_KEY_UP]) camera.ProcessKeyboard(FORWARD, deltaTime);
+		if (keys[GLFW_KEY_S] || keys[GLFW_KEY_DOWN]) camera.ProcessKeyboard(BACKWARD, deltaTime);
+		if (keys[GLFW_KEY_A] || keys[GLFW_KEY_LEFT]) camera.ProcessKeyboard(LEFT, deltaTime);
+		if (keys[GLFW_KEY_D] || keys[GLFW_KEY_RIGHT]) camera.ProcessKeyboard(RIGHT, deltaTime);
 	}
 
-	if (keys[GLFW_KEY_S] || keys[GLFW_KEY_DOWN])
-	{
-		camera.ProcessKeyboard(BACKWARD, deltaTime);
-
-
-	}
-
-	if (keys[GLFW_KEY_A] || keys[GLFW_KEY_LEFT])
-	{
-		camera.ProcessKeyboard(LEFT, deltaTime);
-
-
-	}
-
-	if (keys[GLFW_KEY_D] || keys[GLFW_KEY_RIGHT])
-	{
-		camera.ProcessKeyboard(RIGHT, deltaTime);
-
-
-	}
-
-	if (keys[GLFW_KEY_T])
-	{
-		pointLightPositions[0].x += 0.01f;
-	}
-	if (keys[GLFW_KEY_G])
-	{
-		pointLightPositions[0].x -= 0.01f;
-	}
-
-	if (keys[GLFW_KEY_Y])
-	{
-		pointLightPositions[0].y += 0.01f;
-	}
-
-	if (keys[GLFW_KEY_H])
-	{
-		pointLightPositions[0].y -= 0.01f;
-	}
-	if (keys[GLFW_KEY_U])
-	{
-		pointLightPositions[0].z -= 0.1f;
-	}
-	if (keys[GLFW_KEY_J])
-	{
-		pointLightPositions[0].z += 0.01f;
-	}
-	
+	// Ajuste manual de la pose (grados por frame)
+	if (keys[GLFW_KEY_2]) leftArmRot -= 0.5f;
+	if (keys[GLFW_KEY_3]) rightArmRot -= 0.5f;
+	if (keys[GLFW_KEY_4]) rightArmRot += 0.5f;
+	if (keys[GLFW_KEY_5]) torsoPitch += 0.5f;
+	if (keys[GLFW_KEY_6]) torsoPitch -= 0.5f;
+	if (keys[GLFW_KEY_I]) charPosZ -= 0.005f;
+	if (keys[GLFW_KEY_K]) charPosZ += 0.005f;
 }
 
-// Is called whenever a key is pressed/released via GLFW
-void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode)
+void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
-	if (GLFW_KEY_ESCAPE == key && GLFW_PRESS == action)
-	{
-		glfwSetWindowShouldClose(window, GL_TRUE);
+	if (GLFW_KEY_ESCAPE == key && GLFW_PRESS == action) glfwSetWindowShouldClose(window, GL_TRUE);
+	if (key >= 0 && key < 1024) { if (action == GLFW_PRESS) keys[key] = true; else if (action == GLFW_RELEASE) keys[key] = false; }
+	if (key == GLFW_KEY_M && action == GLFW_PRESS) { if (!boatMoving) { boatT = 0.0f; boatMoving = true; } }
+
+	// Tecla F: guardar keyframe con la pose actual
+	if (key == GLFW_KEY_F && action == GLFW_PRESS) saveFrame();
+
+	// Tecla L: reproducir la reverencia
+	if ((key == GLFW_KEY_L) && action == GLFW_PRESS) {
+		if (play == false && (FrameIndex > 1)) {
+			resetElements();
+			interpolation();
+			play = true;
+			playIndex = 0;
+			i_curr_steps = 0;
+		}
+		else play = false;
 	}
 
-	if (key >= 0 && key < 1024)
-	{
-		if (action == GLFW_PRESS)
-		{
-			keys[key] = true;
-		}
-		else if (action == GLFW_RELEASE)
-		{
-			keys[key] = false;
-		}
+	// Teclado numerico: 0 = camara libre, 1 a  4 = camaras fijas
+	if (action == GLFW_PRESS) {
+		if (key == GLFW_KEY_0) { useFreeCamera = true; }
+		if (key == GLFW_KEY_1) { useFreeCamera = false; correntCamera = 0; }
+		if (key == GLFW_KEY_2) { useFreeCamera = false; correntCamera = 1; }
+		if (key == GLFW_KEY_3) { useFreeCamera = false; correntCamera = 2; }
+		if (key == GLFW_KEY_4) { useFreeCamera = false; correntCamera = 3; }
 	}
+}
 
-	// Iniciar recorrido de la barca con M
-	if (key == GLFW_KEY_M && action == GLFW_PRESS)
-	{
-		if (!boatMoving)
-		{
-			boatT = 0.0f;
-			boatMoving = true;
-		}// Iniciar recorrido de la barca con M
-		if (key == GLFW_KEY_M && action == GLFW_PRESS)
-		{
-			if (!boatMoving)
-			{
-				boatT = 0.0f;
-				boatMoving = true;
+void Animation() {
+	rotacionPeces += 120.0f * deltaTime; if (rotacionPeces >= 360.0f) rotacionPeces -= 360.0f;
+
+	if (boatMoving) { boatT += 0.08f * deltaTime; if (boatT >= 1.0f) { boatT = 1.0f; boatMoving = false; } }
+	bgBoat1Angle += 12.0f * deltaTime; if (bgBoat1Angle >= 360.0f) bgBoat1Angle -= 360.0f;
+	bgBoat2Angle += 10.0f * deltaTime;
+	if (bgBoat2Angle >= 360.0f) bgBoat2Angle -= 360.0f;
+
+	// Motor de interpolacion por incrementos
+	if (play) {
+		if (i_curr_steps >= i_max_steps) {
+			playIndex++;
+			if (playIndex > FrameIndex - 2) {
+				playIndex = 0;
+				play = false;
+				printf("Animacion terminada.\n");
+			}
+			else {
+				i_curr_steps = 0;
+				interpolation();
 			}
 		}
-	}
+		else {
+			charPosX += KeyFrame[playIndex].incX;
+			charPosY += KeyFrame[playIndex].incY;
+			charPosZ += KeyFrame[playIndex].incZ;
+			charRotY += KeyFrame[playIndex].charRotYInc;
+			torsoPitch += KeyFrame[playIndex].torsoPitchInc;
+			headRot += KeyFrame[playIndex].headRotInc;
+			leftArmRot += KeyFrame[playIndex].leftArmRotInc;
+			rightArmRot += KeyFrame[playIndex].rightArmRotInc;
+			leftLegRot += KeyFrame[playIndex].leftLegRotInc;
+			rightLegRot += KeyFrame[playIndex].rightLegRotInc;
 
-	if (keys[GLFW_KEY_SPACE])
-	{
-		active = !active;
-		if (active)
-		{
-			Light1 = glm::vec3(0.2f, 0.8f, 1.0f);
-			
+			i_curr_steps++;
 		}
-		else
-		{
-			Light1 = glm::vec3(0);//Cuado es solo un valor en los 3 vectores pueden dejar solo una componente
-		}
-	}
-	
-}
-void Animation() {
-	// --- ANIMACIÓN DE PECES (Solo rotación) ---
-	float velocidadGiro = 90.0f; // Los peces girarán 90 grados por segundo
-
-	rotacionPeces += velocidadGiro * deltaTime;
-
-	// Evitar que el número crezca al infinito
-	if (rotacionPeces >= 360.0f) {
-		rotacionPeces -= 360.0f;
-	}
-
-	// Movimiento de la barca principal
-	if (boatMoving)
-	{
-		boatT += 0.08f * deltaTime;
-
-		if (boatT >= 1.0f)
-		{
-			boatT = 1.0f;
-			boatMoving = false;
-		}
-	}
-
-	// Barca de fondo 1
-	bgBoat1Angle += 12.0f * deltaTime;
-
-	if (bgBoat1Angle >= 360.0f)
-	{
-		bgBoat1Angle -= 360.0f;
 	}
 }
 
-void MouseCallback(GLFWwindow *window, double xPos, double yPos)
-{
-	if (firstMouse)
-	{
-		lastX = xPos;
-		lastY = yPos;
-		firstMouse = false;
+void MouseCallback(GLFWwindow* window, double xPos, double yPos) {
+	if (firstMouse) { lastX = (GLfloat)xPos; lastY = (GLfloat)yPos; firstMouse = false; }
+	GLfloat xOffset = (GLfloat)(xPos - lastX);
+	GLfloat yOffset = (GLfloat)(lastY - yPos);
+	lastX = (GLfloat)xPos;
+	lastY = (GLfloat)yPos;
+
+	if (useFreeCamera) {
+		// Camara libre: el mouse usa su propia logica
+		camera.ProcessMouseMovement(xOffset, yOffset);
 	}
+	else {
+		// Camaras fijas: el mouse solo cambia el angulo de mira de la camara activa
+		cameraYaw[correntCamera] += xOffset * cameraSensitivity;
+		cameraPitch[correntCamera] += yOffset * cameraSensitivity;
 
-	GLfloat xOffset = xPos - lastX;
-	GLfloat yOffset = lastY - yPos;  // Reversed since y-coordinates go from bottom to left
-
-	lastX = xPos;
-	lastY = yPos;
-
-	camera.ProcessMouseMovement(xOffset, yOffset);
+		// Evita dar la vuelta completa por arriba o por abajo
+		if (cameraPitch[correntCamera] > 89.0f) cameraPitch[correntCamera] = 89.0f;
+		if (cameraPitch[correntCamera] < -89.0f) cameraPitch[correntCamera] = -89.0f;
+	}
 }

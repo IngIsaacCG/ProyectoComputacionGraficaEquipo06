@@ -1,0 +1,15 @@
+ARCHIVOS GENERADOS DIRECTAMENTE DESDE boat.obj ORIGINAL
+
+No se usó Blender para reexportar; las coordenadas de los vértices se conservaron exactamente.
+
+Asignación:
+- BodyBoat.obj = objeto original Plane
+- PaddleLeft.obj = objeto original Cylinder
+- PaddleRight.obj = objeto original Cylinder.001
+
+Pivotes locales recomendados (mismo sistema del OBJ/OpenGL, NO coordenadas de Blender):
+- PaddleLeft:  (0.68804, 0.69021, -0.97946)
+- PaddleRight: (-0.85048, 0.27549, 0.55167)
+
+Estos pivotes se calcularon en la zona más cercana entre cada remo y el casco.
+Usar ángulos pequeños (5 a 8 grados) primero.

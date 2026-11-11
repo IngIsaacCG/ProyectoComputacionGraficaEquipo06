@@ -1,4 +1,4 @@
-# Blender 5.2.2 LTS MTL File: 'isla.blend'
+# Blender 5.2.3 LTS MTL File: 'None'
 # www.blender.org
 
 newmtl Material.015
@@ -9,7 +9,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Kd ../texturas/m1.png
+map_Kd ../texturas/nz.png
 
 newmtl Material.016
 Ns 250.000000
@@ -19,7 +19,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Kd ../texturas/m1.png
+map_Kd ../texturas/nx.png
 
 newmtl Material.017
 Ns 250.000000
@@ -29,7 +29,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Kd ../texturas/m2.png
+map_Kd ../texturas/px.png
 
 newmtl Material.018
 Ns 250.000000
@@ -39,7 +39,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Kd ../texturas/cielo.png
+map_Kd ../texturas/py.png
 
 newmtl Material.019
 Ns 250.000000
@@ -49,7 +49,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Kd ../texturas/m2.png
+map_Kd ../texturas/pz.png
 
 newmtl Material.020
 Ns 250.000000
@@ -59,4 +59,4 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Kd ../texturas/rio.png
+map_Kd ../texturas/ny.png
