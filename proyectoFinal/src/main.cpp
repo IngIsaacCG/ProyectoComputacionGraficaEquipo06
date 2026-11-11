@@ -190,7 +190,6 @@ int main()
 	Model Casas((char*)"assets/modelos/casas.obj");
 	Model Cementerio((char*)"assets/modelos/cementerio.obj");
 	Model Panteon((char*)"assets/modelos/panteonM.obj");
-	Model EntradaPanteon((char*)"assets/modelos/EntradaPanteon.obj");
 	Model Iglesia((char*)"assets/modelos/iglesia.obj");
 	Model Muelles((char*)"assets/modelos/muelles.obj");
 	Model SK((char*)"assets/modelos/SK.obj");
@@ -213,7 +212,6 @@ int main()
 	Model LeftLeg((char*)"assets/modelos/left_Leg.obj");
 	Model RightLeg((char*)"assets/modelos/right_Leg.obj");
 	Model Camino((char*)"assets/modelos/caminos.obj");
-	Model FlorCamino((char*)"assets/modelos/FlorCamino.obj");
 	Model Altar1((char*)"assets/modelos/altar1.obj");
 	Model Entrada((char*)"assets/modelos/entrada.obj");
 	Model Entrada2((char*)"assets/modelos/entrada2.obj");
@@ -290,7 +288,7 @@ int main()
 	glEnableVertexAttribArray(1);
 	glBindVertexArray(0);
 
-	// Aviso pequeño: informacion cultural
+	// Aviso pequeÃ±o: informacion cultural
 	float hintInfoVertices[] = {
 		 0.07f, -0.94f,   0.0f, 0.0f,
 		 0.94f, -0.94f,   1.0f, 0.0f,
@@ -312,7 +310,7 @@ int main()
 	glEnableVertexAttribArray(1);
 	glBindVertexArray(0);
 
-	// Aviso pequeño: exploracion libre
+	// Aviso pequeÃ±o: exploracion libre
 	float hintFreeVertices[] = {
 		-0.30f, -0.94f,   0.0f, 0.0f,
 		 0.94f, -0.94f,   1.0f, 0.0f,
