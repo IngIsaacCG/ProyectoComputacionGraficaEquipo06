@@ -166,7 +166,7 @@ GLfloat lastFrame = 0.0f;
 int main()
 {
 	glfwInit();
-	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Proyecto final", nullptr, nullptr);
+	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Proyecto Final - Equipo 6", nullptr, nullptr);
 	if (nullptr == window) { glfwTerminate(); return EXIT_FAILURE; }
 	glfwMakeContextCurrent(window);
 	glfwGetFramebufferSize(window, &SCREEN_WIDTH, &SCREEN_HEIGHT);
