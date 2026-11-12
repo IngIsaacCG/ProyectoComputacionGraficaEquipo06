@@ -8,6 +8,6 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 1
-map_Kd texturas/base_color_4ee6f510-c859-4d89-84e4-8b2172b3b520.jpg
-map_Ns texturas/input_metallic-input_roughness_roughness.jpg
-map_refl texturas/input_metallic-input_roughness_metallic.jpg
+map_Kd ../texturas/base_color_4ee6f510-c859-4d89-84e4-8b2172b3b520.jpg
+map_Ns ../texturas/input_metallic-input_roughness_roughness.jpg
+map_refl ../texturas/input_metallic-input_roughness_metallic.jpg
