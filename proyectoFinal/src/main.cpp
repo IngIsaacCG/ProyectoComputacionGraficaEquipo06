@@ -79,6 +79,10 @@ bool boatMoving = false;
 float bgBoat1Angle = 0.0f;
 float bgBoat2Angle = 180.0f;
 
+// Relojes independientes para el movimiento de los remos secundarios
+float bgPaddleTime1 = 0.0f;
+float bgPaddleTime2 = 0.0f;
+
 // Variables de animacion
 float charPosX = 0.0f, charPosY = 0.0f, charPosZ = 0.0f;
 float charRotY = 0.0f;
@@ -220,6 +224,7 @@ int main()
 	Model FlorCamino1((char*)"assets/modelos/florCamino1.obj");
 	Model FlorCamino2((char*)"assets/modelos/florCamino2.obj");
 	Model FlorTumba((char*)"assets/modelos/florTumba.obj");
+	Model PetaloAgua((char*)"assets/modelos/petaloAgua.obj");
 	Model FlorTumba2((char*)"assets/modelos/florTumba2.obj");
 	Model Pasillo1((char*)"assets/modelos/pasillo1.obj");
 
@@ -604,6 +609,77 @@ int main()
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		Peces2.Draw(lightingShader);
 
+
+		// Petalos flotantes alrededor de la isla
+		static float tiempoPetalos = 0.0f;
+		tiempoPetalos += deltaTime;
+
+		const float centroX = 1.6f;
+		const float centroZ = -0.1f;
+
+		for (int i = 0; i < 84; i++)
+		{
+			int anillo = (i < 24) ? 0 : (i < 48 ? 1 : 2);
+			int cantidad = (anillo == 2) ? 36 : 24;
+			int j = i - (anillo == 0 ? 0 : (anillo == 1 ? 24 : 48));
+
+			float fase = j * 1.37f + anillo * 2.1f;
+			float angulo = glm::two_pi<float>() * j / cantidad;
+
+			float radioX, radioZ, velocidad;
+
+			if (anillo == 0)
+			{
+				// Anillo interior: giro horario
+				radioX = 13.0f;
+				radioZ = 10.8f;
+				velocidad = -0.08f;
+			}
+			else if (anillo == 1)
+			{
+				// Anillo intermedio: giro contrario
+				radioX = 17.2f;
+				radioZ = 14.4f;
+				velocidad = 0.05f;
+				angulo += glm::radians(7.5f);
+			}
+			else
+			{
+				// Anillo exterior: mas petalos y giro lento
+				radioX = 20.0f;
+				radioZ = 17.0f;
+				velocidad = -0.035f;
+				angulo += glm::radians(5.0f);
+			}
+
+			// Recorrido alrededor de la isla
+			angulo += tiempoPetalos * velocidad;
+
+			float x = centroX + cos(angulo) * radioX;
+			float z = centroZ + sin(angulo) * radioZ;
+
+			// Desplazamiento lateral por corrientes del agua
+			float deriva = 0.30f + anillo * 0.10f;
+
+			x += sin(tiempoPetalos * 0.35f + fase) * deriva;
+			z += cos(tiempoPetalos * 0.27f + fase * 1.2f) * deriva;
+
+			// Balanceo y rotacion individual
+			float giro = j * 43.0f + anillo * 17.0f;
+			giro += sin(tiempoPetalos * 0.55f + fase) * 15.0f;
+
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, glm::vec3(x, 0.45f, z));
+			model = glm::rotate(model, glm::radians(giro),
+				glm::vec3(0.0f, 1.0f, 0.0f));
+			model = glm::scale(model, glm::vec3(0.2f));
+
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE,
+				glm::value_ptr(model));
+
+			PetaloAgua.Draw(lightingShader);
+		}
+
 		// ---------------------------------------------------------
 		// Barca principal con remos animados
 		// ---------------------------------------------------------
@@ -691,7 +767,7 @@ int main()
 
 		// Movimiento de remos
 		float bgPaddleAngle1 =
-			sin(glm::radians(bgBoat1Angle * 5.0f)) * 20.0f;
+			sin(bgPaddleTime1 * 2.8f) * 20.0f;
 
 		// Remo izquierdo
 		glm::vec3 bgPivotLeft1(0.68804f, 0.69021f, -0.97946f);
@@ -758,7 +834,7 @@ int main()
 
 		// Movimiento de remos
 		float bgPaddleAngle2 =
-			sin(glm::radians(bgBoat2Angle * 5.0f)) * 20.0f;
+			sin(bgPaddleTime2 * 3.1f + glm::radians(35.0f)) * 20.0f;
 
 		// Remo izquierdo
 		glm::vec3 bgPivotLeft2(0.68804f, 0.69021f, -0.97946f);
@@ -958,6 +1034,17 @@ void Animation() {
 	bgBoat1Angle += 12.0f * deltaTime; if (bgBoat1Angle >= 360.0f) bgBoat1Angle -= 360.0f;
 	bgBoat2Angle += 10.0f * deltaTime;
 	if (bgBoat2Angle >= 360.0f) bgBoat2Angle -= 360.0f;
+
+	// Remado continuo, independiente de la posicion de cada barca
+	bgPaddleTime1 += deltaTime;
+	bgPaddleTime2 += deltaTime;
+
+	// Reiniciar los ciclos de remado
+	if (bgPaddleTime1 >= glm::two_pi<float>() / 2.8f)
+		bgPaddleTime1 -= glm::two_pi<float>() / 2.8f;
+
+	if (bgPaddleTime2 >= glm::two_pi<float>() / 3.1f)
+		bgPaddleTime2 -= glm::two_pi<float>() / 3.1f;
 
 	// Motor de interpolacion por incrementos
 	if (play) {
