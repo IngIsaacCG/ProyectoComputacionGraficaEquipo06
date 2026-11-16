@@ -163,6 +163,256 @@ void interpolation(void) {
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 
+// =====================================================
+// MARIPOSA: geometria (cuerpo + alas)
+// =====================================================
+const glm::vec3 MARIPOSA_CENTRO(-2.24161f, 2.49808f, -0.40799f);  // centro de la malla original
+const float ESCALA_MARIPOSA = 1.0f;   // escala original de la mariposa (sin escalar)
+glm::vec3 PIVOTE_ALAS(-2.2375f, 1.4990f, -0.4085f);               // se recalcula desde el cuerpo al cargar
+
+// Alas: malla unica deformada en CPU (cada vertice gira segun su lado)
+const int MAX_VERT_OBJ = 4000;
+const int MAX_ESQUINAS = 12000;
+GLfloat alaOrig[MAX_ESQUINAS][8];   // px,py,pz, nx,ny,nz, u,v (posicion original)
+GLfloat alaDin[MAX_ESQUINAS][8];    // mismo formato, ya deformado para el frame actual
+int numEsquinasAla = 0;
+GLuint alaVAO = 0, alaVBO = 0, alaTextura = 0;
+
+// =====================================================
+// MARIPOSA: maquina de estados del aleteo (misma estructura que Maquina_de_estados.cpp)
+// =====================================================
+enum EstadoAleteo { ALETEO_REPOSO = 0, ALETEO_BAJADA = 1, ALETEO_SUBIDA = 2 };
+const float ALETEO_MAX = 40.0f;        // grados hacia arriba y hacia abajo
+const float VEL_BAJADA = 160.0f;       // grados/seg: bajada rapida (empuje)
+const float VEL_SUBIDA = 100.0f;       // grados/seg: subida lenta (recuperacion)
+
+// =====================================================
+// MARIPOSA: vuelo en circulo alrededor del eje Y y giro propio
+// =====================================================
+enum EstadoVuelo { VUELO_REPOSO = 0, VUELO_ORBITA = 1 };
+const float RADIO_ORBITA = 0.35f;      // radio del circulo (unidades de la escena)
+const float VEL_RADIO = 0.25f;         // unidades/seg con las que se abre el circulo al iniciar
+const float VEL_ORBITA = 0.75f;        // rad/seg de giro global alrededor del eje Y
+const float VEL_GIRO_PROPIO = 40.0f;   // grados/seg de giro sobre su propio eje Y
+
+// Estado completo de una mariposa (cada una tiene sus propias alas, vuelo y giro)
+struct Mariposa {
+	int estadoAleteo;        // EstadoAleteo
+	float alas;              // angulo de las alas (grados)
+	int estadoVuelo;         // EstadoVuelo
+	float radio;             // radio actual del circulo (crece al iniciar)
+	float faseInicial;       // posicion inicial sobre el circulo (rad)
+	float anguloOrbita;      // angulo actual sobre el circulo (rad)
+	float sentidoGiro;       // +1 o -1: sentido del giro propio
+	float anguloPropio;      // angulo de giro sobre si misma (grados)
+	glm::vec3 posBase;       // desplazamiento fijo respecto a MARIPOSA_CENTRO (en X o Z)
+	glm::vec3 offset;        // desplazamiento del circulo respecto a posBase
+};
+
+const int NUM_MARIPOSAS = 3;
+Mariposa mariposas[NUM_MARIPOSAS];
+
+// La original gira en sentido positivo; las otras dos en sentido contrario.
+void InicializarMariposas(void) {
+	mariposas[0] = { ALETEO_REPOSO, 0.0f, VUELO_REPOSO, 0.0f, 0.00f, 0.00f, -1.0f, 0.0f,
+					 glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f) };
+	mariposas[1] = { ALETEO_REPOSO, 0.0f, VUELO_REPOSO, 0.5f, 0.50f, 0.50f, -1.0f, 0.0f,
+					 glm::vec3(0.6f, 0.0f, 0.0f), glm::vec3(0.0f) };
+	mariposas[2] = { ALETEO_REPOSO, 0.0f, VUELO_REPOSO, 0.0f, 1.00f, 1.00f, -1.0f, 0.0f,
+					 glm::vec3(0.0f, 0.0f, 0.6f), glm::vec3(0.0f) };
+}
+
+// Reinicia una mariposa a su posicion original (sin tocar su posBase)
+void ReiniciarMariposa(Mariposa& m) {
+	m.estadoAleteo = ALETEO_REPOSO;
+	m.alas = 0.0f;
+	m.estadoVuelo = VUELO_REPOSO;
+	m.radio = 0.0f;
+	m.anguloOrbita = m.faseInicial;
+	m.anguloPropio = 0.0f;
+	m.offset = glm::vec3(0.0f);
+}
+
+// Avanza la maquina de estados del aleteo de una mariposa
+void ActualizarAleteo(Mariposa& m, float dt) {
+	if (m.estadoAleteo == ALETEO_REPOSO) {
+		// Las alas regresan suavemente a la posicion de reposo (0 grados)
+		if (m.alas > 0.0f) {
+			m.alas -= VEL_SUBIDA * dt;
+			if (m.alas < 0.0f) m.alas = 0.0f;
+		}
+		else if (m.alas < 0.0f) {
+			m.alas += VEL_SUBIDA * dt;
+			if (m.alas > 0.0f) m.alas = 0.0f;
+		}
+	}
+	else if (m.estadoAleteo == ALETEO_BAJADA) {
+		m.alas -= VEL_BAJADA * dt;
+		if (m.alas <= -ALETEO_MAX) {       // llego abajo: cambia de estado
+			m.alas = -ALETEO_MAX;
+			m.estadoAleteo = ALETEO_SUBIDA;
+		}
+	}
+	else if (m.estadoAleteo == ALETEO_SUBIDA) {
+		m.alas += VEL_SUBIDA * dt;
+		if (m.alas >= ALETEO_MAX) {        // llego arriba: cambia de estado
+			m.alas = ALETEO_MAX;
+			m.estadoAleteo = ALETEO_BAJADA;
+		}
+	}
+}
+
+// Avanza el vuelo de una mariposa: circulo en el plano XZ alrededor del eje Y
+void ActualizarVuelo(Mariposa& m, float dt) {
+	if (m.estadoVuelo == VUELO_REPOSO) return;
+
+	// El radio se abre suavemente al inicio
+	if (m.radio < RADIO_ORBITA) {
+		m.radio += VEL_RADIO * dt;
+		if (m.radio > RADIO_ORBITA) m.radio = RADIO_ORBITA;
+	}
+
+	m.anguloOrbita += VEL_ORBITA * dt;
+	if (m.anguloOrbita >= 6.2831853f) m.anguloOrbita -= 6.2831853f;
+
+	m.anguloPropio += VEL_GIRO_PROPIO * m.sentidoGiro * dt;
+	if (m.anguloPropio >= 360.0f) m.anguloPropio -= 360.0f;
+	if (m.anguloPropio < 0.0f) m.anguloPropio += 360.0f;
+
+	m.offset = glm::vec3(m.radio * cos(m.anguloOrbita), 0.0f, m.radio * sin(m.anguloOrbita));
+}
+
+// El cuerpo es el nodo raiz: el pivote de las alas es el centro de su malla
+bool CalcularPivoteDesdeCuerpo(const char* ruta) {
+	FILE* f = NULL;
+	if (fopen_s(&f, ruta, "r") != 0 || !f) {
+		printf("ERROR: no se pudo abrir %s\n", ruta);
+		return false;
+	}
+
+	char linea[512];
+	double sx = 0.0, sy = 0.0, sz = 0.0;
+	int n = 0;
+	while (fgets(linea, sizeof(linea), f)) {
+		if (linea[0] == 'v' && linea[1] == ' ') {
+			float x, y, z;
+			if (sscanf_s(linea + 2, "%f %f %f", &x, &y, &z) == 3) {
+				sx += x; sy += y; sz += z;
+				n++;
+			}
+		}
+	}
+	fclose(f);
+
+	if (n == 0) return false;
+
+	PIVOTE_ALAS = glm::vec3((float)(sx / n), (float)(sy / n), (float)(sz / n));
+	printf("Pivote de alas desde el cuerpo: %f %f %f\n", PIVOTE_ALAS.x, PIVOTE_ALAS.y, PIVOTE_ALAS.z);
+	return true;
+}
+
+// Lee el .obj de las alas (triangulos v/vt/vn) y crea el VAO dinamico
+bool CargarAlasMariposa(const char* ruta) {
+	FILE* f = NULL;
+	if (fopen_s(&f, ruta, "r") != 0 || !f) {
+		printf("ERROR: no se pudo abrir %s\n", ruta);
+		return false;
+	}
+
+	static GLfloat posV[MAX_VERT_OBJ][3];
+	static GLfloat norV[MAX_VERT_OBJ][3];
+	static GLfloat uvV[MAX_VERT_OBJ][2];
+	int nV = 0, nVT = 0, nVN = 0;
+	numEsquinasAla = 0;
+
+	char linea[512];
+	while (fgets(linea, sizeof(linea), f)) {
+		if (linea[0] == 'v' && linea[1] == ' ' && nV < MAX_VERT_OBJ) {
+			sscanf_s(linea + 2, "%f %f %f", &posV[nV][0], &posV[nV][1], &posV[nV][2]);
+			nV++;
+		}
+		else if (linea[0] == 'v' && linea[1] == 't' && nVT < MAX_VERT_OBJ) {
+			sscanf_s(linea + 3, "%f %f", &uvV[nVT][0], &uvV[nVT][1]);
+			nVT++;
+		}
+		else if (linea[0] == 'v' && linea[1] == 'n' && nVN < MAX_VERT_OBJ) {
+			sscanf_s(linea + 3, "%f %f %f", &norV[nVN][0], &norV[nVN][1], &norV[nVN][2]);
+			nVN++;
+		}
+		else if (linea[0] == 'f' && linea[1] == ' ') {
+			int a[3], b[3], c[3];
+			int n = sscanf_s(linea + 2, "%d/%d/%d %d/%d/%d %d/%d/%d",
+				&a[0], &b[0], &c[0], &a[1], &b[1], &c[1], &a[2], &b[2], &c[2]);
+			if (n == 9 && numEsquinasAla + 3 <= MAX_ESQUINAS) {
+				for (int i = 0; i < 3; i++) {
+					int k = numEsquinasAla++;
+					int iv = a[i] - 1, it = b[i] - 1, in = c[i] - 1;
+					alaOrig[k][0] = posV[iv][0]; alaOrig[k][1] = posV[iv][1]; alaOrig[k][2] = posV[iv][2];
+					alaOrig[k][3] = norV[in][0]; alaOrig[k][4] = norV[in][1]; alaOrig[k][5] = norV[in][2];
+					alaOrig[k][6] = uvV[it][0];  alaOrig[k][7] = uvV[it][1];
+				}
+			}
+		}
+	}
+	fclose(f);
+
+	// Copia inicial: posicion de reposo
+	for (int k = 0; k < numEsquinasAla; k++)
+		for (int j = 0; j < 8; j++) alaDin[k][j] = alaOrig[k][j];
+
+	glGenVertexArrays(1, &alaVAO);
+	glGenBuffers(1, &alaVBO);
+	glBindVertexArray(alaVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, alaVBO);
+	glBufferData(GL_ARRAY_BUFFER, numEsquinasAla * 8 * sizeof(GLfloat), alaDin, GL_DYNAMIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(2);
+	glBindVertexArray(0);
+
+	printf("Alas de mariposa cargadas: %d esquinas\n", numEsquinasAla);
+	return true;
+}
+
+// Aleteo en espejo: el ala con z mayor al pivote gira +angulo y la otra -angulo,
+// de modo que ambas suben y bajan a la par alrededor del eje X del cuerpo
+void ActualizarAlasMariposa(float angulo) {
+	float rad = glm::radians(angulo);
+	for (int k = 0; k < numEsquinasAla; k++) {
+		float a = (alaOrig[k][2] >= PIVOTE_ALAS.z) ? rad : -rad;
+		float ca = cos(a), sa = sin(a);
+
+		float dy = alaOrig[k][1] - PIVOTE_ALAS.y;
+		float dz = alaOrig[k][2] - PIVOTE_ALAS.z;
+		float ny = alaOrig[k][4], nz = alaOrig[k][5];
+
+		alaDin[k][0] = alaOrig[k][0];
+		alaDin[k][1] = PIVOTE_ALAS.y + dy * ca - dz * sa;
+		alaDin[k][2] = PIVOTE_ALAS.z + dy * sa + dz * ca;
+		alaDin[k][3] = alaOrig[k][3];
+		alaDin[k][4] = ny * ca - nz * sa;
+		alaDin[k][5] = ny * sa + nz * ca;
+		alaDin[k][6] = alaOrig[k][6];
+		alaDin[k][7] = alaOrig[k][7];
+	}
+
+	glBindBuffer(GL_ARRAY_BUFFER, alaVBO);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, numEsquinasAla * 8 * sizeof(GLfloat), alaDin);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void DibujarAlasMariposa(GLint modelLoc, const glm::mat4& m) {
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(m));
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, alaTextura);
+	glBindVertexArray(alaVAO);
+	glDrawArrays(GL_TRIANGLES, 0, numEsquinasAla);
+	glBindVertexArray(0);
+}
+
 int main()
 {
 	glfwInit();
@@ -222,6 +472,22 @@ int main()
 	Model FlorTumba((char*)"assets/modelos/florTumba.obj");
 	Model FlorTumba2((char*)"assets/modelos/florTumba2.obj");
 	Model Pasillo1((char*)"assets/modelos/pasillo1.obj");
+	Model CuerpoMariposa((char*)"assets/modelos/mariposaCuerpo.obj");
+	Model AlasMariposa((char*)"assets/modelos/mariposaAlas.obj");
+
+	// ===== MARIPOSA ANIMADA: modelos y textura =====
+	Model CuerpoMariposaAnim((char*)"assets/modelos/mariposaCuerpo.obj");
+	CalcularPivoteDesdeCuerpo("assets/modelos/mariposaCuerpo.obj");
+	CargarAlasMariposa("assets/modelos/mariposaAlas.obj");
+	InicializarMariposas();
+
+	alaTextura = SOIL_load_OGL_texture("assets/texturas/base_color_1f84cec1-4546-47ea-8430-632ab656373f_mariposa.jpg", SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
+	printf("Textura de alas id=%u (0 = no cargo)\n", alaTextura);
+	glBindTexture(GL_TEXTURE_2D, alaTextura);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Cuadro informativo - Camara 1
 	GLuint infoTexture = SOIL_load_OGL_texture("assets/texturas/info_camara1.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
@@ -579,6 +845,29 @@ int main()
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); FlorCamino2.Draw(lightingShader);
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); FlorTumba.Draw(lightingShader);
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); FlorTumba2.Draw(lightingShader);
+
+		// Mariposa estatica original (comentada para que no tape a la animada)
+		//model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); CuerpoMariposa.Draw(lightingShader);
+		//model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); AlasMariposa.Draw(lightingShader);
+
+		// ===== MARIPOSAS: cada una con su cuerpo y sus alas (hijas del cuerpo) =====
+		// Orden: traslacion global (posBase + circulo) * giro propio sobre Y * escala * centrado
+		for (int i = 0; i < NUM_MARIPOSAS; i++) {
+			Mariposa& m = mariposas[i];
+
+			glm::mat4 mariposaMatrix = glm::translate(glm::mat4(1.0f), MARIPOSA_CENTRO + m.posBase + m.offset);
+			mariposaMatrix = glm::rotate(mariposaMatrix, glm::radians(m.anguloPropio), glm::vec3(0.0f, 1.0f, 0.0f));
+			mariposaMatrix = glm::scale(mariposaMatrix, glm::vec3(ESCALA_MARIPOSA));
+			mariposaMatrix = glm::translate(mariposaMatrix, -MARIPOSA_CENTRO);
+
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(mariposaMatrix));
+			CuerpoMariposaAnim.Draw(lightingShader);
+
+			// Las alas se deforman con el angulo de esta mariposa y se dibujan con su matriz
+			ActualizarAlasMariposa(m.alas);
+			DibujarAlasMariposa(modelLoc, mariposaMatrix);
+		}
+
 		glUniform1i(glGetUniformLocation(lightingShader.Program, "windEnabled"), GL_TRUE);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "windTime"), (float)glfwGetTime());
 
@@ -949,6 +1238,19 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 		if (!useFreeCamera && (correntCamera == 0 || correntCamera == 1 || correntCamera == 2 || correntCamera == 3))
 			showInfoPanel = !showInfoPanel;
 	}
+
+	// Tecla B: iniciar el vuelo en circulo y el aleteo de todas las mariposas
+	if (key == GLFW_KEY_B && action == GLFW_PRESS) {
+		for (int i = 0; i < NUM_MARIPOSAS; i++) {
+			if (mariposas[i].estadoVuelo == VUELO_REPOSO) mariposas[i].estadoVuelo = VUELO_ORBITA;
+			if (mariposas[i].estadoAleteo == ALETEO_REPOSO) mariposas[i].estadoAleteo = ALETEO_BAJADA;
+		}
+	}
+
+	// Tecla V: detener todas las mariposas y regresarlas a su lugar
+	if (key == GLFW_KEY_V && action == GLFW_PRESS) {
+		for (int i = 0; i < NUM_MARIPOSAS; i++) ReiniciarMariposa(mariposas[i]);
+	}
 }
 
 void Animation() {
@@ -987,6 +1289,21 @@ void Animation() {
 
 			i_curr_steps++;
 		}
+	}
+
+	// Maquinas de estados del aleteo y del vuelo de cada mariposa
+	for (int i = 0; i < NUM_MARIPOSAS; i++) {
+		ActualizarAleteo(mariposas[i], deltaTime);
+		ActualizarVuelo(mariposas[i], deltaTime);
+	}
+
+	// Diagnostico: una linea por segundo (primera mariposa)
+	static float tDiag = 0.0f;
+	tDiag += deltaTime;
+	if (tDiag >= 1.0f) {
+		tDiag = 0.0f;
+		printf("alas=%.1f orbita=%.2f propio=%.1f vuelo=%d\n",
+			mariposas[0].alas, mariposas[0].anguloOrbita, mariposas[0].anguloPropio, mariposas[0].estadoVuelo);
 	}
 }
 
