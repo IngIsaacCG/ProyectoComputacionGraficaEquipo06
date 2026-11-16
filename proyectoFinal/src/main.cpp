@@ -711,7 +711,7 @@ int main()
 
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].position"), -2.4264f, 1.6475f, 0.11014f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].ambient"), 0.05f * flicker0, 0.02f * flicker0, 0.005f * flicker0);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].diffuse"), 0.80f * flicker0, 0.30f * flicker0, 0.05f * flicker0);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].diffuse"), 0.65f * flicker0, 0.24f * flicker0, 0.04f * flicker0);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].specular"), 0.90f, 0.40f, 0.10f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[0].constant"), 1.0f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[0].linear"), 0.50f);
@@ -719,7 +719,7 @@ int main()
 
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[1].position"), -2.4322f, 1.6560f, -0.8175f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[1].ambient"), 0.05f * flicker1, 0.02f * flicker1, 0.005f * flicker1);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[1].diffuse"), 0.80f * flicker1, 0.30f * flicker1, 0.05f * flicker1);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[1].diffuse"), 0.65f * flicker1, 0.24f * flicker1, 0.04f * flicker1);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[1].specular"), 0.90f, 0.40f, 0.10f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[1].constant"), 1.0f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[1].linear"), 0.50f);
@@ -727,7 +727,7 @@ int main()
 
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[2].position"), -1.6344f, 1.5845f, -0.21061f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[2].ambient"), 0.05f * flicker2, 0.02f * flicker2, 0.005f * flicker2);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[2].diffuse"), 0.80f * flicker2, 0.30f * flicker2, 0.05f * flicker2);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[2].diffuse"), 0.65f * flicker2, 0.24f * flicker2, 0.04f * flicker2);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[2].specular"), 0.90f, 0.40f, 0.10f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[2].constant"), 1.0f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[2].linear"), 0.50f);
@@ -735,14 +735,14 @@ int main()
 
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[3].position"), -1.0226f, 1.5204f, -1.0543f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[3].ambient"), 0.05f * flicker3, 0.02f * flicker3, 0.005f * flicker3);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[3].diffuse"), 0.80f * flicker3, 0.30f * flicker3, 0.05f * flicker3);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[3].diffuse"), 0.65f * flicker3, 0.24f * flicker3, 0.04f * flicker3);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[3].specular"), 0.90f, 0.40f, 0.10f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[3].constant"), 1.0f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[3].linear"), 0.50f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[3].quadratic"), 0.75f);
 
 		// Luces de las casas - fijas, tono blanco calido
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[4].position"), 1.096f, 1.8039f, -0.45079f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[4].position"), 3.8456f, 1.8039f, -2.4689f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[4].ambient"), 0.055f, 0.055f, 0.050f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[4].diffuse"), 0.72f, 0.70f, 0.62f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[4].specular"), 0.32f, 0.31f, 0.28f);
@@ -750,7 +750,7 @@ int main()
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[4].linear"), 0.18f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[4].quadratic"), 0.10f);
 
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].position"), 1.096f, 1.8039f, -2.5193f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].position"), 0.6166f, 0.9031f, -2.4431f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].ambient"), 0.055f, 0.055f, 0.050f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].diffuse"), 0.72f, 0.70f, 0.62f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].specular"), 0.32f, 0.31f, 0.28f);
@@ -758,7 +758,7 @@ int main()
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[5].linear"), 0.18f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[5].quadratic"), 0.10f);
 
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[6].position"), 6.1152f, 1.8039f, -1.3698f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[6].position"), 7.8817f, 1.8039f, -2.5120f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[6].ambient"), 0.055f, 0.055f, 0.050f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[6].diffuse"), 0.72f, 0.70f, 0.62f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[6].specular"), 0.32f, 0.31f, 0.28f);
@@ -766,7 +766,7 @@ int main()
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[6].linear"), 0.20f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[6].quadratic"), 0.12f);
 
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[7].position"), 6.1348f, 1.8039f, -3.5318f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[7].position"), 6.1348f, 1.8039f, -2.4945f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[7].ambient"), 0.055f, 0.055f, 0.050f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[7].diffuse"), 0.72f, 0.70f, 0.62f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[7].specular"), 0.32f, 0.31f, 0.28f);
@@ -783,28 +783,28 @@ int main()
 		float flicker10 = 0.71f + 0.23f * sin(time * 2.5f + 2.6f) + 0.10f * sin(time * 6.2f);
 
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[8].position"), 0.081311f, 1.7833f, -0.46429f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[8].ambient"), 0.14f * flicker8, 0.09f * flicker8, 0.035f * flicker8);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[8].diffuse"), 1.10f * flicker8, 0.68f * flicker8, 0.24f * flicker8);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[8].ambient"), 0.045f * flicker8, 0.025f * flicker8, 0.010f * flicker8);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[8].diffuse"), 0.80f * flicker8, 0.50f * flicker8, 0.18f * flicker8);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[8].specular"), 0.40f, 0.24f, 0.10f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[8].constant"), 1.0f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[8].linear"), 0.10f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[8].quadratic"), 0.04f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[8].linear"), 0.45f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[8].quadratic"), 0.65f);
 
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[9].position"), 1.2133f, 1.6803f, -0.46429f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[9].ambient"), 0.14f * flicker9, 0.09f * flicker9, 0.035f * flicker9);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[9].diffuse"), 1.10f * flicker9, 0.68f * flicker9, 0.24f * flicker9);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[9].ambient"), 0.045f * flicker9, 0.025f * flicker9, 0.010f * flicker9);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[9].diffuse"), 0.80f * flicker9, 0.50f * flicker9, 0.18f * flicker9);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[9].specular"), 0.40f, 0.24f, 0.10f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[9].constant"), 1.0f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[9].linear"), 0.10f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[9].quadratic"), 0.04f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[9].linear"), 0.45f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[9].quadratic"), 0.65f);
 
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[10].position"), 2.3211f, 1.6319f, -0.46429f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[10].ambient"), 0.14f * flicker10, 0.09f * flicker10, 0.035f * flicker10);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[10].diffuse"), 1.10f * flicker10, 0.68f * flicker10, 0.24f * flicker10);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[10].ambient"), 0.045f * flicker10, 0.025f * flicker10, 0.010f * flicker10);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[10].diffuse"), 0.80f * flicker10, 0.50f * flicker10, 0.18f * flicker10);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[10].specular"), 0.40f, 0.24f, 0.10f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[10].constant"), 1.0f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[10].linear"), 0.10f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[10].quadratic"), 0.04f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[10].linear"), 0.45f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[10].quadratic"), 0.65f);
 
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.position"), curPos.x, curPos.y, curPos.z);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.direction"), curFront.x, curFront.y, curFront.z);
