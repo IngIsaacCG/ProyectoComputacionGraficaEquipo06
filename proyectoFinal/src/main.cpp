@@ -47,13 +47,19 @@ GLfloat lastY = HEIGHT / 2.0f;
 bool keys[1024];
 bool firstMouse = true;
 
-// Camaras fijas (teclas KP 1 a KP 4): solo giran con el mouse
-const int NUM_CAMERA = 4;
+// Camaras fijas: Numpad 1 a 5
+// Numpad 0: camara libre
+// Camaras 1 a 4: permiten girar con el mouse
+// Camara 5: fija frente a la ofrenda
+const int NUM_CAMERA = 5;
 glm::vec3 cameraPositions[NUM_CAMERA] = {
 	glm::vec3(20.95f, 1.80f, -2.58f),
 	glm::vec3(8.92f, 1.07f, -2.61f),
 	glm::vec3(2.30f, 1.07f, -2.46f),
-	glm::vec3(-1.30f, 1.64f, 0.37f)
+	glm::vec3(-1.30f, 1.64f, 0.37f),
+
+	// Camara 5: frente a la ofrenda
+	glm::vec3(0.62f, 1.10f, -3.00f)
 };
 
 // Punto inicial al que mira cada camara fija (solo para calcular su angulo inicial)
@@ -61,7 +67,10 @@ glm::vec3 cameraTargets[NUM_CAMERA] = {
 	glm::vec3(0.0f, 1.5f, -2.5f),
 	glm::vec3(0.0f, 0.0f, 0.0f),
 	glm::vec3(0.0f, 0.0f, 0.0f),
-	glm::vec3(0.0f, 1.0f, -2.0f)
+	glm::vec3(0.0f, 1.0f, -2.0f),
+
+	// Centro de la ofrenda
+	glm::vec3(0.62f, 0.89f, -1.95f)
 };
 
 // Angulos de giro de cada camara fija (grados)
@@ -1201,7 +1210,7 @@ int main()
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 			glBindVertexArray(0);
 		}
-		else if (!showInfoPanel) {
+		else if (!showInfoPanel && correntCamera < 4) {
 
 			// Aviso de informacion segun la camara
 			if (correntCamera == 0)
@@ -1233,7 +1242,7 @@ int main()
 				glBindVertexArray(0);
 			}
 		}
-		else {
+		else if (showInfoPanel && correntCamera < 4) {
 
 			// Ficha cultural segun la camara
 			if (correntCamera == 0)
@@ -1288,8 +1297,8 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 	// Tecla F: guardar keyframe con la pose actual
 	if (key == GLFW_KEY_F && action == GLFW_PRESS) saveFrame();
 
-	// Tecla L: reproducir la reverencia
-	if ((key == GLFW_KEY_L) && action == GLFW_PRESS) {
+	// Tecla L: reproducir la reverencia fuera de la camara del altar
+	if (key == GLFW_KEY_L && action == GLFW_PRESS && (useFreeCamera || correntCamera != 4)) {
 		if (play == false && (FrameIndex > 1)) {
 			resetElements();
 			interpolation();
@@ -1300,14 +1309,40 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 		else play = false;
 	}
 
-	// Teclado numerico: 0 = camara libre, 1 a 4 = camaras fijas
+
+	// Teclado numerico: 0 = camara libre, 1 a 5 = camaras fijas
 	if (action == GLFW_PRESS) {
-		if (key == GLFW_KEY_0) { useFreeCamera = true; showInfoPanel = false; }
-		if (key == GLFW_KEY_1) { useFreeCamera = false; correntCamera = 0; showInfoPanel = false; }
-		if (key == GLFW_KEY_2) { useFreeCamera = false; correntCamera = 1; showInfoPanel = false; }
-		if (key == GLFW_KEY_3) { useFreeCamera = false; correntCamera = 2; showInfoPanel = false; }
-		if (key == GLFW_KEY_4) { useFreeCamera = false; correntCamera = 3; showInfoPanel = false; }
+		if (key == GLFW_KEY_KP_0) {
+			useFreeCamera = true;
+			showInfoPanel = false;
+		}
+		if (key == GLFW_KEY_KP_1) {
+			useFreeCamera = false;
+			correntCamera = 0;
+			showInfoPanel = false;
+		}
+		if (key == GLFW_KEY_KP_2) {
+			useFreeCamera = false;
+			correntCamera = 1;
+			showInfoPanel = false;
+		}
+		if (key == GLFW_KEY_KP_3) {
+			useFreeCamera = false;
+			correntCamera = 2;
+			showInfoPanel = false;
+		}
+		if (key == GLFW_KEY_KP_4) {
+			useFreeCamera = false;
+			correntCamera = 3;
+			showInfoPanel = false;
+		}
+		if (key == GLFW_KEY_KP_5) {
+			useFreeCamera = false;
+			correntCamera = 4;
+			showInfoPanel = false;
+		}
 	}
+
 
 	// Tecla E: abrir/cerrar informacion cultural de las Camaras 1, 2, 3 y 4
 	if (key == GLFW_KEY_E && action == GLFW_PRESS) {
@@ -1406,6 +1441,9 @@ void MouseCallback(GLFWwindow* window, double xPos, double yPos) {
 		camera.ProcessMouseMovement(xOffset, yOffset);
 	}
 	else {
+		if (correntCamera == 4)
+			return;
+
 		// Camaras fijas: el mouse solo cambia el angulo de mira de la camara activa
 		cameraYaw[correntCamera] += xOffset * cameraSensitivity;
 		cameraPitch[correntCamera] += yOffset * cameraSensitivity;
