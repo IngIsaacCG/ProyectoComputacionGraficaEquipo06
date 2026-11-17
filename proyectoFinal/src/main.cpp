@@ -417,10 +417,72 @@ void DibujarAlasMariposa(GLint modelLoc, const glm::mat4& m) {
 // TURISTA: caminata continua. El torso es el nodo raiz; brazos y piernas giran
 // sobre su punto superior (articulacion), en fase opuesta.
 // =====================================================
-const float TURISTA_BRAZO_MAX = 45.0f;     // grados maximos del brazo (adelante/atras)
-const float TURISTA_PIERNA_MAX = 30.0f;    // grados maximos de la pierna (adelante/atras)
+const float TURISTA_BRAZO_MAX = 23.0f;     // grados maximos del brazo (adelante/atras)
+const float TURISTA_PIERNA_MAX = 20.0f;    // grados maximos de la pierna (adelante/atras)
 const float VEL_CAMINATA = 3.0f;           // rad/seg del ciclo de caminata
 float faseCaminata = 0.0f;
+
+
+
+// TURISTA: recorrido alrededor de la fuente
+const float TURISTA_VELOCIDAD = 0.18f;
+
+// Recorrido completo: fuente, camino hacia el muelle y regreso
+
+const glm::vec2 rutaTurista[] = {
+
+	// Inicio en el camino hacia la fuente
+	glm::vec2(7.80f, -2.28f),
+	glm::vec2(6.10f, -2.30f),
+	glm::vec2(4.90f, -2.28f),
+	glm::vec2(3.35f, -2.23f),
+
+	// Ida: primer lado de la fuente (sin cambios)
+	glm::vec2(2.95f, -2.15f),
+	glm::vec2(2.64f, -2.14f),
+	glm::vec2(2.28f, -2.15f),
+	glm::vec2(1.60f, -2.23f),
+
+	// Giro antes de la ofrenda (sin cambios)
+	glm::vec2(1.32f, -2.37f),
+	glm::vec2(1.32f, -2.64f),
+
+	// Regreso: segundo lado de la fuente (sin cambios)
+	glm::vec2(1.60f, -2.78f),
+	glm::vec2(2.28f, -2.86f),
+	glm::vec2(2.64f, -2.87f),
+	glm::vec2(2.95f, -2.86f),
+	glm::vec2(3.35f, -2.79f),
+
+	// Regreso por el camino largo hacia el puente
+	glm::vec2(4.90f, -2.73f),
+	glm::vec2(6.10f, -2.65f),
+	glm::vec2(7.60f, -2.65f),
+
+	// Curva redondeada cerca del puente
+	glm::vec2(8.05f, -2.64f),
+	glm::vec2(8.20f, -2.60f),
+	glm::vec2(8.29f, -2.54f),
+	glm::vec2(8.33f, -2.46f),
+	glm::vec2(8.29f, -2.38f),
+	glm::vec2(8.20f, -2.32f),
+	glm::vec2(8.05f, -2.29f),
+
+	// Incorporacion gradual al camino de ida
+	glm::vec2(7.80f, -2.28f)
+};
+
+const int NUM_PUNTOS_TURISTA =
+sizeof(rutaTurista) / sizeof(rutaTurista[0]);
+
+glm::vec2 posicionTurista = rutaTurista[0];
+int siguientePuntoTurista = 1;
+
+float anguloTurista = 0.0f;
+float distanciaPasoTurista = 0.0f;
+
+// Centro de referencia del modelo
+glm::vec3 centroTurista(0.0f);
 
 float turBrazoIzq = 0.0f, turBrazoDer = 0.0f;
 float turPiernaIzq = 0.0f, turPiernaDer = 0.0f;
@@ -469,15 +531,82 @@ bool CalcularPivoteSuperior(const char* ruta, glm::vec3& pivote) {
 }
 
 // Avanza la caminata: brazos +-45 y piernas +-30 en fase opuesta, siempre activa
+
+
+
 void ActualizarCaminata(float dt) {
-	faseCaminata += VEL_CAMINATA * dt;
-	if (faseCaminata >= 6.2831853f) faseCaminata -= 6.2831853f;
+
+	// Evitar saltos grandes al recuperar la ventana
+	dt = glm::min(dt, 0.05f);
+
+	glm::vec2 destino = rutaTurista[siguientePuntoTurista];
+	glm::vec2 diferencia = destino - posicionTurista;
+	float distancia = glm::length(diferencia);
+
+	if (distancia < 0.001f) {
+		siguientePuntoTurista++;
+
+		if (siguientePuntoTurista >= NUM_PUNTOS_TURISTA)
+			siguientePuntoTurista = 1;
+
+		return;
+	}
+
+	glm::vec2 direccion = diferencia / distancia;
+
+	// Orientar al turista hacia el siguiente punto
+	float anguloObjetivo = atan2(
+		direccion.y, -direccion.x
+	);
+
+	float diferenciaAngulo = atan2(
+		sin(anguloObjetivo - anguloTurista),
+		cos(anguloObjetivo - anguloTurista)
+	);
+
+	// Giro gradual para evitar cambios bruscos
+	float giroMaximo = glm::radians(100.0f) * dt;
+
+	anguloTurista += glm::clamp(
+		diferenciaAngulo, -giroMaximo, giroMaximo
+	);
+
+	// Reducir ligeramente la velocidad en las curvas
+	float factorVelocidad = glm::clamp(
+		1.0f - fabs(diferenciaAngulo) * 0.35f,
+		0.50f,
+		1.0f
+	);
+
+	float avance = glm::min(
+		TURISTA_VELOCIDAD * factorVelocidad * dt,
+		distancia
+	);
+
+	posicionTurista += direccion * avance;
+
+	// Sincronizar las pisadas con la distancia recorrida
+	distanciaPasoTurista += avance;
+
+	faseCaminata = distanciaPasoTurista *
+		(3.14159265f / 0.13f);
 
 	float s = sin(faseCaminata);
+
 	turBrazoIzq = -TURISTA_BRAZO_MAX * s;
 	turBrazoDer = TURISTA_BRAZO_MAX * s;
+
 	turPiernaIzq = TURISTA_PIERNA_MAX * s;
 	turPiernaDer = -TURISTA_PIERNA_MAX * s;
+
+	// Continuar con el siguiente tramo
+	if (avance >= distancia - 0.0001f) {
+
+		siguientePuntoTurista++;
+
+		if (siguientePuntoTurista >= NUM_PUNTOS_TURISTA)
+			siguientePuntoTurista = 1;
+	}
 }
 
 int main()
@@ -547,6 +676,12 @@ int main()
 	Model TuristaRightArm((char*)"assets/modelos/turistaBrazoDer.obj");
 	Model TuristaLeftLeg((char*)"assets/modelos/turistaPieIzq.obj");
 	Model TuristaRightLeg((char*)"assets/modelos/turistaPieDer.obj");
+
+	// Centro del torso para el desplazamiento y los giros
+	CalcularPivoteSuperior(
+		"assets/modelos/turistaTorso.obj",
+		centroTurista
+	);
 
 	// ===== MARIPOSA ANIMADA: modelos y textura =====
 	Model CuerpoMariposaAnim((char*)"assets/modelos/mariposaCuerpo.obj");
@@ -925,8 +1060,34 @@ int main()
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); FlorTumba.Draw(lightingShader);
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); FlorTumba2.Draw(lightingShader);
 
-		// ===== TURISTA CAMINANDO: torso = nodo raiz; cabeza fija al torso; brazos y piernas giran =====
+
+
+		// Turista: posicion y orientacion sobre el recorrido
 		glm::mat4 turistaRaiz = glm::mat4(1.0f);
+
+		turistaRaiz = glm::translate(
+			turistaRaiz,
+			glm::vec3(
+				posicionTurista.x - centroTurista.x,
+				0.0f,
+				posicionTurista.y - centroTurista.z
+			)
+		);
+
+		// Girar sobre el centro del cuerpo
+		turistaRaiz = glm::translate(
+			turistaRaiz, centroTurista
+		);
+
+		turistaRaiz = glm::rotate(
+			turistaRaiz,
+			anguloTurista,
+			glm::vec3(0.0f, 1.0f, 0.0f)
+		);
+
+		turistaRaiz = glm::translate(
+			turistaRaiz, -centroTurista
+		);
 
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(turistaRaiz));
 		TuristaTorso.Draw(lightingShader);
