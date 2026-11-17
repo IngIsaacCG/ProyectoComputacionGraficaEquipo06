@@ -28,6 +28,7 @@
 // Function prototypes
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void MouseCallback(GLFWwindow* window, double xPos, double yPos);
+void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void DoMovement();
 void Animation();
 
@@ -81,6 +82,42 @@ const float cameraSensitivity = 0.1f;
 int correntCamera = 0;        // indice de la camara fija activa
 bool useFreeCamera = true;    // true = camara original libre
 bool showInfoPanel = false;
+
+// Estado de la interaccion de la ofrenda
+bool ofrendaActiva = false;
+
+
+// Objetos de la ofrenda:
+// 0 = veladora, 1 = flor, 2 = pan de muerto
+const glm::vec3 inicioOfrenda[3] = {
+	glm::vec3(0.42f, 0.76f, -2.48f),
+	glm::vec3(0.62f, 0.76f, -2.48f),
+	glm::vec3(0.82f, 0.76f, -2.48f)
+};
+
+// Posiciones originales de las piezas retiradas del altar
+const glm::vec3 destinoOfrenda[3] = {
+	glm::vec3(0.68764f, 0.84990f, -1.91889f),
+	glm::vec3(0.71743f, 0.88149f, -1.89221f),
+	glm::vec3(0.56324f, 0.79512f, -1.98367f)
+};
+
+float progresoOfrenda[3] = { 0.0f, 0.0f, 0.0f };
+bool objetoColocado[3] = { false, false, false };
+int objetoEnMovimiento = -1;
+
+// Objeto sobre el que se encuentra el cursor
+int objetoResaltado = -1;
+
+// Estado final de la ofrenda
+bool ofrendaCompleta = false;
+
+// Tiempo restante del mensaje de finalizacion
+float tiempoAvisoOfrenda = 0.0f;
+
+// Intensidad de la luz del altar (1.0 = normal)
+float intensidadLuzOfrenda = 1.0f;
+
 
 float rotacionPeces = 0.0f;
 float boatT = 0.0f;
@@ -435,6 +472,7 @@ int main()
 	glfwGetFramebufferSize(window, &SCREEN_WIDTH, &SCREEN_HEIGHT);
 	glfwSetKeyCallback(window, KeyCallback);
 	glfwSetCursorPosCallback(window, MouseCallback);
+	glfwSetMouseButtonCallback(window, MouseButtonCallback);
 	glewExperimental = GL_TRUE;
 	if (GLEW_OK != glewInit()) return EXIT_FAILURE;
 	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -475,7 +513,7 @@ int main()
 	Model LeftLeg((char*)"assets/modelos/left_Leg.obj");
 	Model RightLeg((char*)"assets/modelos/right_Leg.obj");
 	Model Camino((char*)"assets/modelos/caminos.obj");
-	Model Altar1((char*)"assets/modelos/altar1.obj");
+	Model Altar1((char*)"assets/modelos/altar1_incompleto.obj");
 	Model Entrada((char*)"assets/modelos/entrada.obj");
 	Model Entrada2((char*)"assets/modelos/entrada2.obj");
 	Model Entrada3((char*)"assets/modelos/entrada3.obj");
@@ -488,6 +526,12 @@ int main()
 	Model Pasillo1((char*)"assets/modelos/pasillo1.obj");
 	Model CuerpoMariposa((char*)"assets/modelos/mariposaCuerpo.obj");
 	Model AlasMariposa((char*)"assets/modelos/mariposaAlas.obj");
+
+	// Objetos independientes para completar la ofrenda
+	Model OfrendaVeladora((char*)"assets/modelos/ofrenda_veladora.obj");
+	Model OfrendaFlor((char*)"assets/modelos/ofrenda_flor.obj");
+	Model OfrendaPan((char*)"assets/modelos/ofrenda_alimento.obj");
+
 
 	// ===== MARIPOSA ANIMADA: modelos y textura =====
 	Model CuerpoMariposaAnim((char*)"assets/modelos/mariposaCuerpo.obj");
@@ -516,6 +560,47 @@ int main()
 	GLuint hintInfoTexture4 = SOIL_load_OGL_texture("assets/texturas/hint_info_cam4.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
 	GLuint hintAnimationTexture4 = SOIL_load_OGL_texture("assets/texturas/hint_animation_cam4.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
 
+	// Aviso para iniciar la interaccion de la ofrenda
+	GLuint hintOfrendaTexture = SOIL_load_OGL_texture(
+		"assets/texturas/hint_ofrenda.png",
+		SOIL_LOAD_RGBA,
+		SOIL_CREATE_NEW_ID,
+		SOIL_FLAG_INVERT_Y
+	);
+
+	if (hintOfrendaTexture == 0)
+		std::cout << "ERROR: No se pudo cargar hint_ofrenda.png" << std::endl;
+	// Nuevos letreros de la interaccion de la ofrenda
+	GLuint hintSeleccionarOfrendaTexture = SOIL_load_OGL_texture(
+		"assets/texturas/hint_ofrenda_seleccionar.png",
+		SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y
+	);
+
+	GLuint infoVeladoraTexture = SOIL_load_OGL_texture(
+		"assets/texturas/info_ofrenda_veladora.png",
+		SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y
+	);
+
+	GLuint infoFlorTexture = SOIL_load_OGL_texture(
+		"assets/texturas/info_ofrenda_flor.png",
+		SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y
+	);
+
+	GLuint infoPanTexture = SOIL_load_OGL_texture(
+		"assets/texturas/info_ofrenda_pan.png",
+		SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y
+	);
+
+	GLuint hintOfrendaCompletaTexture = SOIL_load_OGL_texture(
+		"assets/texturas/hint_ofrenda_completa.png",
+		SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y
+	);
+
+	if (!hintSeleccionarOfrendaTexture || !infoVeladoraTexture ||
+		!infoFlorTexture || !infoPanTexture || !hintOfrendaCompletaTexture) {
+		std::cout << "ERROR: No se pudo cargar uno de los letreros "
+			<< "de la ofrenda." << std::endl;
+	}
 	if (infoTexture == 0)
 		std::cout << "ERROR: No se pudo cargar info_camara1.png" << std::endl;
 	if (hintInfoTexture == 0)
@@ -635,6 +720,56 @@ int main()
 	glEnableVertexAttribArray(1);
 	glBindVertexArray(0);
 
+	// Crear un rectangulo para los letreros superiores
+	auto crearPanelSuperior = [](float izquierda, float derecha,
+		float abajo, float arriba) -> GLuint {
+
+			float vertices[] = {
+				izquierda, abajo, 0.0f, 0.0f,
+				derecha,   abajo, 1.0f, 0.0f,
+				derecha,   arriba, 1.0f, 1.0f,
+
+				izquierda, abajo, 0.0f, 0.0f,
+				derecha,   arriba, 1.0f, 1.0f,
+				izquierda, arriba, 0.0f, 1.0f
+			};
+
+			GLuint vao, vbo;
+			glGenVertexArrays(1, &vao);
+			glGenBuffers(1, &vbo);
+
+			glBindVertexArray(vao);
+			glBindBuffer(GL_ARRAY_BUFFER, vbo);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(vertices),
+				vertices, GL_STATIC_DRAW);
+
+			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
+				4 * sizeof(float), (void*)0);
+			glEnableVertexAttribArray(0);
+
+			glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE,
+				4 * sizeof(float),
+				(void*)(2 * sizeof(float)));
+			glEnableVertexAttribArray(1);
+
+			glBindVertexArray(0);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+			return vao;
+		};
+
+	// Aviso pequeño: esquina superior izquierda
+	GLuint hintOfrendaSuperiorVAO =
+		crearPanelSuperior(-0.94f, -0.04f, 0.65f, 0.95f);
+
+	// Fichas culturales: parte superior izquierda
+	GLuint infoOfrendaSuperiorVAO =
+		crearPanelSuperior(-0.94f, 0.36f, 0.37f, 0.95f);
+
+	// Mensaje final: centrado arriba
+	GLuint finalOfrendaSuperiorVAO =
+		crearPanelSuperior(-0.68f, 0.68f, 0.61f, 0.94f);
+
 	overlayShader.Use();
 	glUniform1i(glGetUniformLocation(overlayShader.Program, "overlayTexture"), 0);
 
@@ -680,6 +815,67 @@ int main()
 		glfwPollEvents();
 		DoMovement();
 		Animation();
+
+
+
+		// Animacion del objeto seleccionado de la ofrenda
+		if (objetoEnMovimiento >= 0) {
+			int i = objetoEnMovimiento;
+
+			progresoOfrenda[i] += deltaTime / 1.6f;
+
+			if (progresoOfrenda[i] >= 1.0f) {
+				progresoOfrenda[i] = 1.0f;
+				objetoColocado[i] = true;
+				objetoEnMovimiento = -1;
+			}
+		}
+
+		// Comprobar si la ofrenda esta completa
+		if (!ofrendaCompleta &&
+			objetoColocado[0] &&
+			objetoColocado[1] &&
+			objetoColocado[2]) {
+
+			ofrendaCompleta = true;
+			tiempoAvisoOfrenda = 5.0f;
+
+			std::cout << "Ofrenda completada correctamente."
+				<< std::endl;
+		}
+
+		// Actualizar duracion del aviso final
+		if (tiempoAvisoOfrenda > 0.0f) {
+			tiempoAvisoOfrenda -= deltaTime;
+
+			if (tiempoAvisoOfrenda < 0.0f)
+				tiempoAvisoOfrenda = 0.0f;
+		}
+
+		// Durante la interaccion, reforzar la luz del altar.
+		// Al terminar, regresar a su intensidad original.
+		float luzObjetivo = 1.0f;
+
+
+		// Iluminacion reforzada durante la interaccion
+		if (ofrendaActiva && !ofrendaCompleta)
+			luzObjetivo = 2.5f;
+
+
+		float pasoLuz = deltaTime * 0.80f;
+
+		if (intensidadLuzOfrenda < luzObjetivo) {
+			intensidadLuzOfrenda += pasoLuz;
+
+			if (intensidadLuzOfrenda > luzObjetivo)
+				intensidadLuzOfrenda = luzObjetivo;
+		}
+		else if (intensidadLuzOfrenda > luzObjetivo) {
+			intensidadLuzOfrenda -= pasoLuz;
+
+			if (intensidadLuzOfrenda < luzObjetivo)
+				intensidadLuzOfrenda = luzObjetivo;
+		}
 
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -759,13 +955,16 @@ int main()
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[4].linear"), 0.18f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[4].quadratic"), 0.10f);
 
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].position"), 0.6166f, 0.9031f, -2.4431f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].ambient"), 0.055f, 0.055f, 0.050f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].diffuse"), 0.72f, 0.70f, 0.62f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].specular"), 0.32f, 0.31f, 0.28f);
+
+		// Luz de la ofrenda: disminuye al completar la actividad
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].position"),0.6166f, 0.9031f, -2.4431f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].ambient"),0.055f * intensidadLuzOfrenda,0.055f * intensidadLuzOfrenda,0.050f * intensidadLuzOfrenda);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].diffuse"),0.72f * intensidadLuzOfrenda,0.70f * intensidadLuzOfrenda,0.62f * intensidadLuzOfrenda);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].specular"),0.32f * intensidadLuzOfrenda,0.31f * intensidadLuzOfrenda,0.28f * intensidadLuzOfrenda);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[5].constant"), 1.0f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[5].linear"), 0.18f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[5].quadratic"), 0.10f);
+
 
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[6].position"), 7.8817f, 1.8039f, -2.5120f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[6].ambient"), 0.055f, 0.055f, 0.050f);
@@ -851,6 +1050,72 @@ int main()
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Pasto.Draw(lightingShader);
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Camino.Draw(lightingShader);
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Altar1.Draw(lightingShader);
+
+
+
+		// Dibujar los objetos colocados desde cualquier camara
+		// y los pendientes mientras se realiza la interaccion
+		if (ofrendaActiva || objetoColocado[0] || objetoColocado[1] || objetoColocado[2]) {
+			
+			for (int i = 0; i < 3; i++) {
+
+				// Los objetos colocados siempre son visibles.
+				// Los pendientes solo aparecen durante la actividad en la camara 5.
+				if (!objetoColocado[i] &&
+					(useFreeCamera || correntCamera != 4 || !ofrendaActiva)) {
+					continue;
+				}
+
+				float t = glm::clamp(progresoOfrenda[i], 0.0f, 1.0f);
+
+				// KeyFrames: inicio, punto intermedio y destino
+				glm::vec3 puntoMedio =
+					glm::mix(inicioOfrenda[i], destinoOfrenda[i], 0.5f);
+
+				puntoMedio.y += 0.14f;
+
+				glm::vec3 posicion;
+
+				if (t < 0.5f) {
+					float u = t * 2.0f;
+					u = u * u * (3.0f - 2.0f * u);
+					posicion = glm::mix(inicioOfrenda[i], puntoMedio, u);
+				}
+				else {
+					float u = (t - 0.5f) * 2.0f;
+					u = u * u * (3.0f - 2.0f * u);
+					posicion = glm::mix(puntoMedio, destinoOfrenda[i], u);
+				}
+
+				// Escala inicial 3.0, escala final 1.0
+				float escala = glm::mix(3.0f, 1.0f, t);
+
+				// Resaltar ligeramente el objeto señalado
+				if (i == objetoResaltado &&
+					!objetoColocado[i] &&
+					objetoEnMovimiento < 0 &&
+					t == 0.0f) {
+
+					escala *= 1.12f;
+				}
+
+				model = glm::mat4(1.0f);
+				model = glm::translate(model, posicion);
+				model = glm::scale(model, glm::vec3(escala));
+
+				glUniformMatrix4fv(
+					modelLoc, 1, GL_FALSE, glm::value_ptr(model)
+				);
+
+				if (i == 0)
+					OfrendaVeladora.Draw(lightingShader);
+				else if (i == 1)
+					OfrendaFlor.Draw(lightingShader);
+				else
+					OfrendaPan.Draw(lightingShader);
+			}
+		}
+
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Entrada.Draw(lightingShader);
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Entrada2.Draw(lightingShader);
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Entrada3.Draw(lightingShader);
@@ -1259,6 +1524,78 @@ int main()
 			glBindVertexArray(0);
 		}
 
+
+		// Camara 5: aviso para comenzar la ofrenda
+		else if (!useFreeCamera && correntCamera == 4
+			&& !ofrendaActiva) {
+
+			glBindTexture(GL_TEXTURE_2D, hintOfrendaTexture);
+			glBindVertexArray(hintInfoVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+			glBindVertexArray(0);
+		}
+
+		// Camara 5: letreros durante la interaccion
+		else if (!useFreeCamera && correntCamera == 4
+			&& ofrendaActiva) {
+
+			// Mensaje de finalizacion
+			// Aviso final: permanece hasta que se reinicie
+			if (ofrendaCompleta) {
+
+				glBindTexture(GL_TEXTURE_2D,
+					hintOfrendaCompletaTexture);
+
+				glBindVertexArray(finalOfrendaSuperiorVAO);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+				glBindVertexArray(0);
+			}
+
+			else {
+
+				// Mostrar informacion si el cursor señala
+				// un objeto pendiente de colocar
+				int objetoInfo = -1;
+
+				if (objetoEnMovimiento < 0 &&
+					objetoResaltado >= 0 &&
+					objetoResaltado < 3 &&
+					!objetoColocado[objetoResaltado]) {
+
+					objetoInfo = objetoResaltado;
+				}
+
+				if (objetoInfo >= 0) {
+
+					// 0 = veladora, 1 = flor, 2 = pan
+					if (objetoInfo == 0)
+						glBindTexture(GL_TEXTURE_2D,
+							infoVeladoraTexture);
+					else if (objetoInfo == 1)
+						glBindTexture(GL_TEXTURE_2D,
+							infoFlorTexture);
+					else
+						glBindTexture(GL_TEXTURE_2D,
+							infoPanTexture);
+
+					glBindVertexArray(infoOfrendaSuperiorVAO);
+					glDrawArrays(GL_TRIANGLES, 0, 6);
+					glBindVertexArray(0);
+				}
+				else {
+
+					// Indicacion general mientras no hay
+					// ningun objeto señalado
+					glBindTexture(GL_TEXTURE_2D,
+						hintSeleccionarOfrendaTexture);
+
+					glBindVertexArray(hintOfrendaSuperiorVAO);
+					glDrawArrays(GL_TRIANGLES, 0, 6);
+					glBindVertexArray(0);
+				}
+			}
+		}
+
 		glDisable(GL_BLEND);
 		glEnable(GL_DEPTH_TEST);
 
@@ -1344,10 +1681,50 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 	}
 
 
-	// Tecla E: abrir/cerrar informacion cultural de las Camaras 1, 2, 3 y 4
+	// Tecla E: informacion cultural e interaccion de la ofrenda
 	if (key == GLFW_KEY_E && action == GLFW_PRESS) {
-		if (!useFreeCamera && (correntCamera == 0 || correntCamera == 1 || correntCamera == 2 || correntCamera == 3))
+
+		// Camaras 1 a 4: conservar las fichas culturales
+		if (!useFreeCamera && correntCamera < 4) {
 			showInfoPanel = !showInfoPanel;
+		}
+
+		// Camara 5: comenzar la interaccion de la ofrenda
+		else if (!useFreeCamera && correntCamera == 4
+			&& !ofrendaActiva) {
+
+			ofrendaActiva = true;
+
+			// Mostrar el cursor para seleccionar los objetos
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+			std::cout << "Interaccion de la ofrenda iniciada." << std::endl;
+		}
+	}
+
+	// Tecla R: repetir la interaccion de la ofrenda
+	// Solo funciona cuando ya se completo y estamos en la camara 5
+	if (key == GLFW_KEY_R && action == GLFW_PRESS &&
+		!useFreeCamera && correntCamera == 4 && ofrendaCompleta) {
+
+		// Restablecer el estado de la actividad
+		ofrendaActiva = false;
+		ofrendaCompleta = false;
+		objetoEnMovimiento = -1;
+		objetoResaltado = -1;
+
+		// Devolver los tres objetos a su estado inicial
+		for (int i = 0; i < 3; i++) {
+			progresoOfrenda[i] = 0.0f;
+			objetoColocado[i] = false;
+		}
+
+		// Restablecer la iluminacion y el aviso final
+		intensidadLuzOfrenda = 1.0f;
+		tiempoAvisoOfrenda = 0.0f;
+
+		std::cout << "Ofrenda reiniciada. Presiona E para comenzar."
+			<< std::endl;
 	}
 
 	// Tecla B: iniciar el vuelo en circulo y el aleteo de todas las mariposas
@@ -1436,6 +1813,68 @@ void MouseCallback(GLFWwindow* window, double xPos, double yPos) {
 	lastX = (GLfloat)xPos;
 	lastY = (GLfloat)yPos;
 
+	// Detectar el objeto señalado en la camara 5
+	objetoResaltado = -1;
+
+	if (!useFreeCamera && correntCamera == 4 && ofrendaActiva) {
+
+		int ancho, alto;
+		glfwGetWindowSize(window, &ancho, &alto);
+
+		if (ancho > 0 && alto > 0 && objetoEnMovimiento < 0) {
+
+			glm::vec3 posicionCamara = cameraPositions[4];
+			glm::vec3 direccion = frontFromAngles(
+				cameraYaw[4], cameraPitch[4]
+			);
+
+			glm::mat4 vista = glm::lookAt(
+				posicionCamara,
+				posicionCamara + direccion,
+				glm::vec3(0.0f, 1.0f, 0.0f)
+			);
+
+			glm::mat4 proyeccion = glm::perspective(
+				camera.GetZoom(),
+				(float)SCREEN_WIDTH / (float)SCREEN_HEIGHT,
+				0.1f,
+				100.0f
+			);
+
+			glm::vec4 viewport(
+				0.0f, 0.0f,
+				(float)ancho, (float)alto
+			);
+
+			float distanciaMinima = 70.0f * 70.0f;
+
+			for (int i = 0; i < 3; i++) {
+
+				if (objetoColocado[i])
+					continue;
+
+				glm::vec3 pantalla = glm::project(
+					inicioOfrenda[i],
+					vista,
+					proyeccion,
+					viewport
+				);
+
+				if (pantalla.z < 0.0f || pantalla.z > 1.0f)
+					continue;
+
+				float dx = (float)xPos - pantalla.x;
+				float dy = (float)yPos - ((float)alto - pantalla.y);
+				float distancia = dx * dx + dy * dy;
+
+				if (distancia < distanciaMinima) {
+					distanciaMinima = distancia;
+					objetoResaltado = i;
+				}
+			}
+		}
+	}
+
 	if (useFreeCamera) {
 		// Camara libre: el mouse usa su propia logica
 		camera.ProcessMouseMovement(xOffset, yOffset);
@@ -1451,5 +1890,93 @@ void MouseCallback(GLFWwindow* window, double xPos, double yPos) {
 		// Evita dar la vuelta completa por arriba o por abajo
 		if (cameraPitch[correntCamera] > 89.0f) cameraPitch[correntCamera] = 89.0f;
 		if (cameraPitch[correntCamera] < -89.0f) cameraPitch[correntCamera] = -89.0f;
+	}
+}
+
+
+void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+	// Solo responder al clic izquierdo
+	if (button != GLFW_MOUSE_BUTTON_LEFT || action != GLFW_PRESS)
+		return;
+
+	// Solo durante la interaccion de la camara 5
+	if (!ofrendaActiva || useFreeCamera || correntCamera != 4)
+		return;
+
+	// Evitar dos animaciones simultaneas
+	if (objetoEnMovimiento >= 0)
+		return;
+
+	double mouseX, mouseY;
+	glfwGetCursorPos(window, &mouseX, &mouseY);
+
+	int ancho, alto;
+	glfwGetWindowSize(window, &ancho, &alto);
+
+	if (ancho <= 0 || alto <= 0)
+		return;
+
+	// Vista de la camara 5
+	glm::vec3 posicionCamara = cameraPositions[4];
+	glm::vec3 direccion = frontFromAngles(
+		cameraYaw[4], cameraPitch[4]
+	);
+
+	glm::mat4 vista = glm::lookAt(
+		posicionCamara,
+		posicionCamara + direccion,
+		glm::vec3(0.0f, 1.0f, 0.0f)
+	);
+
+	// Proyeccion utilizada por la escena
+	glm::mat4 proyeccion = glm::perspective(
+		camera.GetZoom(),
+		(float)SCREEN_WIDTH / (float)SCREEN_HEIGHT,
+		0.1f,
+		100.0f
+	);
+
+	glm::vec4 viewport(
+		0.0f, 0.0f,
+		(float)ancho, (float)alto
+	);
+
+	float distanciaMinima = 70.0f * 70.0f;
+	int seleccionado = -1;
+
+	for (int i = 0; i < 3; i++) {
+
+		// No seleccionar objetos ya colocados
+		if (objetoColocado[i])
+			continue;
+
+		glm::vec3 pantalla = glm::project(
+			inicioOfrenda[i],
+			vista,
+			proyeccion,
+			viewport
+		);
+
+		if (pantalla.z < 0.0f || pantalla.z > 1.0f)
+			continue;
+
+		float dx = (float)mouseX - pantalla.x;
+		float dy = (float)mouseY - ((float)alto - pantalla.y);
+
+		float distancia = dx * dx + dy * dy;
+
+		if (distancia < distanciaMinima) {
+			distanciaMinima = distancia;
+			seleccionado = i;
+		}
+	}
+
+	if (seleccionado >= 0) {
+		objetoEnMovimiento = seleccionado;
+		progresoOfrenda[seleccionado] = 0.0f;
+
+		std::cout << "Objeto seleccionado: "
+			<< seleccionado << std::endl;
 	}
 }
