@@ -413,6 +413,73 @@ void DibujarAlasMariposa(GLint modelLoc, const glm::mat4& m) {
 	glBindVertexArray(0);
 }
 
+// =====================================================
+// TURISTA: caminata continua. El torso es el nodo raiz; brazos y piernas giran
+// sobre su punto superior (articulacion), en fase opuesta.
+// =====================================================
+const float TURISTA_BRAZO_MAX = 45.0f;     // grados maximos del brazo (adelante/atras)
+const float TURISTA_PIERNA_MAX = 30.0f;    // grados maximos de la pierna (adelante/atras)
+const float VEL_CAMINATA = 3.0f;           // rad/seg del ciclo de caminata
+float faseCaminata = 0.0f;
+
+float turBrazoIzq = 0.0f, turBrazoDer = 0.0f;
+float turPiernaIzq = 0.0f, turPiernaDer = 0.0f;
+
+glm::vec3 pivBrazoIzq(0.0f), pivBrazoDer(0.0f);
+glm::vec3 pivPiernaIzq(0.0f), pivPiernaDer(0.0f);
+
+// Gira una parte alrededor de un pivote sobre el eje Z: M = P * T(p) * Rz(angulo) * T(-p)
+static glm::mat4 rotAroundZ(const glm::mat4& parent, const glm::vec3& pivot, float degrees) {
+	glm::mat4 m = glm::translate(parent, pivot);
+	m = glm::rotate(m, glm::radians(degrees), glm::vec3(0.0f, 0.0f, 1.0f));
+	m = glm::translate(m, -pivot);
+	return m;
+}
+
+// Pivote de una parte: centro horizontal de la malla y su punto mas alto (articulacion)
+bool CalcularPivoteSuperior(const char* ruta, glm::vec3& pivote) {
+	FILE* f = NULL;
+	if (fopen_s(&f, ruta, "r") != 0 || !f) {
+		printf("ERROR: no se pudo abrir %s\n", ruta);
+		return false;
+	}
+
+	char linea[512];
+	float minX = 1e9f, minY = 1e9f, minZ = 1e9f;
+	float maxX = -1e9f, maxY = -1e9f, maxZ = -1e9f;
+	int n = 0;
+	while (fgets(linea, sizeof(linea), f)) {
+		if (linea[0] == 'v' && linea[1] == ' ') {
+			float x, y, z;
+			if (sscanf_s(linea + 2, "%f %f %f", &x, &y, &z) == 3) {
+				if (x < minX) minX = x; if (x > maxX) maxX = x;
+				if (y < minY) minY = y; if (y > maxY) maxY = y;
+				if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+				n++;
+			}
+		}
+	}
+	fclose(f);
+
+	if (n == 0) return false;
+
+	pivote = glm::vec3((minX + maxX) * 0.5f, maxY, (minZ + maxZ) * 0.5f);
+	printf("Pivote de %s: %f %f %f\n", ruta, pivote.x, pivote.y, pivote.z);
+	return true;
+}
+
+// Avanza la caminata: brazos +-45 y piernas +-30 en fase opuesta, siempre activa
+void ActualizarCaminata(float dt) {
+	faseCaminata += VEL_CAMINATA * dt;
+	if (faseCaminata >= 6.2831853f) faseCaminata -= 6.2831853f;
+
+	float s = sin(faseCaminata);
+	turBrazoIzq = -TURISTA_BRAZO_MAX * s;
+	turBrazoDer = TURISTA_BRAZO_MAX * s;
+	turPiernaIzq = TURISTA_PIERNA_MAX * s;
+	turPiernaDer = -TURISTA_PIERNA_MAX * s;
+}
+
 int main()
 {
 	glfwInit();
@@ -474,12 +541,24 @@ int main()
 	Model Pasillo1((char*)"assets/modelos/pasillo1.obj");
 	Model CuerpoMariposa((char*)"assets/modelos/mariposaCuerpo.obj");
 	Model AlasMariposa((char*)"assets/modelos/mariposaAlas.obj");
+	Model TuristaCabeza((char*)"assets/modelos/turistaCabeza.obj");
+	Model TuristaTorso((char*)"assets/modelos/turistaTorso.obj");
+	Model TuristaLeftArm((char*)"assets/modelos/turistaBrazoIzq.obj");
+	Model TuristaRightArm((char*)"assets/modelos/turistaBrazoDer.obj");
+	Model TuristaLeftLeg((char*)"assets/modelos/turistaPieIzq.obj");
+	Model TuristaRightLeg((char*)"assets/modelos/turistaPieDer.obj");
 
 	// ===== MARIPOSA ANIMADA: modelos y textura =====
 	Model CuerpoMariposaAnim((char*)"assets/modelos/mariposaCuerpo.obj");
 	CalcularPivoteDesdeCuerpo("assets/modelos/mariposaCuerpo.obj");
 	CargarAlasMariposa("assets/modelos/mariposaAlas.obj");
 	InicializarMariposas();
+
+	// ===== TURISTA: articulaciones de brazos y piernas =====
+	CalcularPivoteSuperior("assets/modelos/turistaBrazoIzq.obj", pivBrazoIzq);
+	CalcularPivoteSuperior("assets/modelos/turistaBrazoDer.obj", pivBrazoDer);
+	CalcularPivoteSuperior("assets/modelos/turistaPieIzq.obj", pivPiernaIzq);
+	CalcularPivoteSuperior("assets/modelos/turistaPieDer.obj", pivPiernaDer);
 
 	alaTextura = SOIL_load_OGL_texture("assets/texturas/base_color_1f84cec1-4546-47ea-8430-632ab656373f_mariposa.jpg", SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
 	printf("Textura de alas id=%u (0 = no cargo)\n", alaTextura);
@@ -845,6 +924,31 @@ int main()
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); FlorCamino2.Draw(lightingShader);
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); FlorTumba.Draw(lightingShader);
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); FlorTumba2.Draw(lightingShader);
+
+		// ===== TURISTA CAMINANDO: torso = nodo raiz; cabeza fija al torso; brazos y piernas giran =====
+		glm::mat4 turistaRaiz = glm::mat4(1.0f);
+
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(turistaRaiz));
+		TuristaTorso.Draw(lightingShader);
+
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(turistaRaiz));
+		TuristaCabeza.Draw(lightingShader);
+
+		glm::mat4 turBrazoIzqM = rotAroundZ(turistaRaiz, pivBrazoIzq, turBrazoIzq);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(turBrazoIzqM));
+		TuristaLeftArm.Draw(lightingShader);
+
+		glm::mat4 turBrazoDerM = rotAroundZ(turistaRaiz, pivBrazoDer, turBrazoDer);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(turBrazoDerM));
+		TuristaRightArm.Draw(lightingShader);
+
+		glm::mat4 turPiernaIzqM = rotAroundZ(turistaRaiz, pivPiernaIzq, turPiernaIzq);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(turPiernaIzqM));
+		TuristaLeftLeg.Draw(lightingShader);
+
+		glm::mat4 turPiernaDerM = rotAroundZ(turistaRaiz, pivPiernaDer, turPiernaDer);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(turPiernaDerM));
+		TuristaRightLeg.Draw(lightingShader);
 
 		// Mariposa estatica original (comentada para que no tape a la animada)
 		//model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); CuerpoMariposa.Draw(lightingShader);
@@ -1296,6 +1400,9 @@ void Animation() {
 		ActualizarAleteo(mariposas[i], deltaTime);
 		ActualizarVuelo(mariposas[i], deltaTime);
 	}
+
+	// Caminata del turista (siempre activa)
+	ActualizarCaminata(deltaTime);
 
 	// Diagnostico: una linea por segundo (primera mariposa)
 	static float tDiag = 0.0f;

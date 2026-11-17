@@ -1,0 +1,13 @@
+# Blender 5.3.0 MTL File: 'None'
+# www.blender.org
+
+newmtl input_material.013
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd ../texturas/base_color_0c117ba4-dde6-4d59-bd48-6650f482ec1f.jpg
+map_Ns ../texturas/input_metallic-input_roughness_metallic_Turista.jpg
+map_refl ../texturas/input_metallic-input_roughness_metallic_Turista.jpg
