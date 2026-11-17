@@ -1616,11 +1616,6 @@ void DoMovement()
 	}
 
 	// Ajuste manual de la pose (grados por frame)
-	if (keys[GLFW_KEY_2]) leftArmRot -= 0.5f;
-	if (keys[GLFW_KEY_3]) rightArmRot -= 0.5f;
-	if (keys[GLFW_KEY_4]) rightArmRot += 0.5f;
-	if (keys[GLFW_KEY_5]) torsoPitch += 0.5f;
-	if (keys[GLFW_KEY_6]) torsoPitch -= 0.5f;
 	if (keys[GLFW_KEY_I]) charPosZ -= 0.005f;
 	if (keys[GLFW_KEY_K]) charPosZ += 0.005f;
 }
@@ -1646,34 +1641,40 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 		else play = false;
 	}
 
-
-	// Teclado numerico: 0 = camara libre, 1 a 5 = camaras fijas
+	// Numeros superiores y teclado numerico
+	// 0 = camara libre, 1 a 5 = camaras fijas
 	if (action == GLFW_PRESS) {
-		if (key == GLFW_KEY_KP_0) {
+
+		if (key == GLFW_KEY_0 || key == GLFW_KEY_KP_0) {
 			useFreeCamera = true;
 			showInfoPanel = false;
 		}
-		if (key == GLFW_KEY_KP_1) {
+
+		if (key == GLFW_KEY_1 || key == GLFW_KEY_KP_1) {
 			useFreeCamera = false;
 			correntCamera = 0;
 			showInfoPanel = false;
 		}
-		if (key == GLFW_KEY_KP_2) {
+
+		if (key == GLFW_KEY_2 || key == GLFW_KEY_KP_2) {
 			useFreeCamera = false;
 			correntCamera = 1;
 			showInfoPanel = false;
 		}
-		if (key == GLFW_KEY_KP_3) {
+
+		if (key == GLFW_KEY_3 || key == GLFW_KEY_KP_3) {
 			useFreeCamera = false;
 			correntCamera = 2;
 			showInfoPanel = false;
 		}
-		if (key == GLFW_KEY_KP_4) {
+
+		if (key == GLFW_KEY_4 || key == GLFW_KEY_KP_4) {
 			useFreeCamera = false;
 			correntCamera = 3;
 			showInfoPanel = false;
 		}
-		if (key == GLFW_KEY_KP_5) {
+
+		if (key == GLFW_KEY_5 || key == GLFW_KEY_KP_5) {
 			useFreeCamera = false;
 			correntCamera = 4;
 			showInfoPanel = false;
