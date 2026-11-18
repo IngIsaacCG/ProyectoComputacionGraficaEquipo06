@@ -357,7 +357,7 @@ bool CalcularPivoteDesdeCuerpo(const char* ruta) {
 	if (n == 0) return false;
 
 	PIVOTE_ALAS = glm::vec3((float)(sx / n), (float)(sy / n), (float)(sz / n));
-	printf("Pivote de alas desde el cuerpo: %f %f %f\n", PIVOTE_ALAS.x, PIVOTE_ALAS.y, PIVOTE_ALAS.z);
+	/*printf("Pivote de alas desde el cuerpo: %f %f %f\n", PIVOTE_ALAS.x, PIVOTE_ALAS.y, PIVOTE_ALAS.z);*/
 	return true;
 }
 
@@ -423,7 +423,7 @@ bool CargarAlasMariposa(const char* ruta) {
 	glEnableVertexAttribArray(2);
 	glBindVertexArray(0);
 
-	printf("Alas de mariposa cargadas: %d esquinas\n", numEsquinasAla);
+	/*printf("Alas de mariposa cargadas: %d esquinas\n", numEsquinasAla);*/
 	return true;
 }
 
@@ -573,7 +573,7 @@ bool CalcularPivoteSuperior(const char* ruta, glm::vec3& pivote) {
 	if (n == 0) return false;
 
 	pivote = glm::vec3((minX + maxX) * 0.5f, maxY, (minZ + maxZ) * 0.5f);
-	printf("Pivote de %s: %f %f %f\n", ruta, pivote.x, pivote.y, pivote.z);
+	/*printf("Pivote de %s: %f %f %f\n", ruta, pivote.x, pivote.y, pivote.z);*/
 	return true;
 }
 
@@ -752,7 +752,7 @@ int main()
 	CalcularPivoteSuperior("assets/modelos/turistaPieDer.obj", pivPiernaDer);
 
 	alaTextura = SOIL_load_OGL_texture("assets/texturas/base_color_1f84cec1-4546-47ea-8430-632ab656373f_mariposa.jpg", SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
-	printf("Textura de alas id=%u (0 = no cargo)\n", alaTextura);
+	/*printf("Textura de alas id=%u (0 = no cargo)\n", alaTextura);*/
 	glBindTexture(GL_TEXTURE_2D, alaTextura);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -2035,7 +2035,7 @@ void Animation() {
 			if (playIndex > FrameIndex - 2) {
 				playIndex = 0;
 				play = false;
-				printf("Animacion terminada.\n");
+				/*printf("Animacion terminada.\n");*/
 			}
 			else {
 				i_curr_steps = 0;
@@ -2072,8 +2072,8 @@ void Animation() {
 	tDiag += deltaTime;
 	if (tDiag >= 1.0f) {
 		tDiag = 0.0f;
-		printf("alas=%.1f orbita=%.2f propio=%.1f vuelo=%d\n",
-			mariposas[0].alas, mariposas[0].anguloOrbita, mariposas[0].anguloPropio, mariposas[0].estadoVuelo);
+		/*printf("alas=%.1f orbita=%.2f propio=%.1f vuelo=%d\n",
+			mariposas[0].alas, mariposas[0].anguloOrbita, mariposas[0].anguloPropio, mariposas[0].estadoVuelo);*/
 	}
 }
 
