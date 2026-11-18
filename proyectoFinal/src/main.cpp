@@ -1169,10 +1169,10 @@ int main()
 
 
 		// Luz de la ofrenda: disminuye al completar la actividad
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].position"), 0.6166f, 0.9031f, -2.4431f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].ambient"), 0.055f * intensidadLuzOfrenda, 0.055f * intensidadLuzOfrenda, 0.050f * intensidadLuzOfrenda);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].diffuse"), 0.72f * intensidadLuzOfrenda, 0.70f * intensidadLuzOfrenda, 0.62f * intensidadLuzOfrenda);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].specular"), 0.32f * intensidadLuzOfrenda, 0.31f * intensidadLuzOfrenda, 0.28f * intensidadLuzOfrenda);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].position"),0.6166f, 0.9031f, -2.4431f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].ambient"),0.055f * intensidadLuzOfrenda,0.055f * intensidadLuzOfrenda,0.050f * intensidadLuzOfrenda);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].diffuse"),0.72f * intensidadLuzOfrenda,0.70f * intensidadLuzOfrenda,0.62f * intensidadLuzOfrenda);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[5].specular"),0.32f * intensidadLuzOfrenda,0.31f * intensidadLuzOfrenda,0.28f * intensidadLuzOfrenda);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[5].constant"), 1.0f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[5].linear"), 0.18f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[5].quadratic"), 0.10f);
@@ -1266,15 +1266,15 @@ int main()
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); arboles2.Draw(lightingShader);
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); arbustos.Draw(lightingShader);
 
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		arbustos.Draw(lightingShader);
+glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+arbustos.Draw(lightingShader);
 
 
 
 		// Dibujar los objetos colocados desde cualquier camara
 		// y los pendientes mientras se realiza la interaccion
 		if (ofrendaActiva || objetoColocado[0] || objetoColocado[1] || objetoColocado[2]) {
-
+			
 			for (int i = 0; i < 3; i++) {
 
 				// Los objetos colocados siempre son visibles.
