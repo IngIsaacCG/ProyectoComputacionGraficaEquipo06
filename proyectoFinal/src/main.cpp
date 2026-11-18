@@ -764,6 +764,8 @@ int main()
 	GLuint hintInfoTexture = SOIL_load_OGL_texture("assets/texturas/hint_info.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
 	GLuint hintFreeTexture = SOIL_load_OGL_texture("assets/texturas/hint_free.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
 	GLuint hintAnimationTexture = SOIL_load_OGL_texture("assets/texturas/hint_animation.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
+	GLuint hintMariposasCam4Texture = SOIL_load_OGL_texture("assets/texturas/hint_mariposas_cam4.png",SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
+	GLuint hintDetenerMariposasCam4Texture = SOIL_load_OGL_texture("assets/texturas/hint_detener_mariposas_cam4.png",SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
 	GLuint infoTexture2 = SOIL_load_OGL_texture("assets/texturas/info_camara2.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
 	GLuint hintInfoTexture2 = SOIL_load_OGL_texture("assets/texturas/hint_info_cam2.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
 	GLuint infoTexture3 = SOIL_load_OGL_texture("assets/texturas/info_camara3.png", SOIL_LOAD_RGBA, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
@@ -969,6 +971,14 @@ int main()
 
 			return vao;
 		};
+
+
+	// Camara 4: dos avisos superiores separados
+	GLuint hintMariposasCam4VAO =
+		crearPanelSuperior(-0.94f, -0.07f, 0.61f, 0.94f);
+
+	GLuint hintDetenerMariposasCam4VAO =
+		crearPanelSuperior(0.07f, 0.94f, 0.61f, 0.94f);
 
 	// Aviso pequeño: esquina superior izquierda
 	GLuint hintOfrendaSuperiorVAO =
@@ -1766,13 +1776,28 @@ arbustos.Draw(lightingShader);
 				glBindVertexArray(0);
 			}
 
-			// Camara 4: animacion del personaje
+
 			else if (correntCamera == 3) {
+
+				// L: reverencia, abajo a la izquierda
 				glBindTexture(GL_TEXTURE_2D, hintAnimationTexture4);
 				glBindVertexArray(hintAnimationVAO);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 				glBindVertexArray(0);
+
+				// B: iniciar mariposas, arriba a la izquierda
+				glBindTexture(GL_TEXTURE_2D, hintMariposasCam4Texture);
+				glBindVertexArray(hintMariposasCam4VAO);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+				glBindVertexArray(0);
+
+				// V: detener mariposas, arriba a la derecha
+				glBindTexture(GL_TEXTURE_2D, hintDetenerMariposasCam4Texture);
+				glBindVertexArray(hintDetenerMariposasCam4VAO);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+				glBindVertexArray(0);
 			}
+
 		}
 		else if (showInfoPanel && correntCamera < 4) {
 
