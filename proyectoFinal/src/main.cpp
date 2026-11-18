@@ -526,6 +526,9 @@ int main()
 	Model Pasillo1((char*)"assets/modelos/pasillo1.obj");
 	Model CuerpoMariposa((char*)"assets/modelos/mariposaCuerpo.obj");
 	Model AlasMariposa((char*)"assets/modelos/mariposaAlas.obj");
+	Model arboles1((char*)"assets/modelos/arboles1.obj");
+	Model arboles2((char*)"assets/modelos/arboles2.obj");
+	Model arbustos((char*)"assets/modelos/arbustos.obj");
 
 	// Objetos independientes para completar la ofrenda
 	Model OfrendaVeladora((char*)"assets/modelos/ofrenda_veladora.obj");
@@ -1050,6 +1053,12 @@ int main()
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Pasto.Draw(lightingShader);
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Camino.Draw(lightingShader);
 		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); Altar1.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); arboles1.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); arboles2.Draw(lightingShader);
+		model = glm::mat4(1.0f); glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); arbustos.Draw(lightingShader);
+
+glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+arbustos.Draw(lightingShader);
 
 
 
